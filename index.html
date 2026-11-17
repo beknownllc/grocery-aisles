@@ -77,6 +77,11 @@ nav.bar .btn{flex:1}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .chip{padding:8px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:.88rem}
 .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mine{background:var(--soft);border:2px solid var(--accent);border-radius:16px;padding:10px 10px 2px;margin:12px 0}
+.mine-h{font-weight:800;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
+.mine ul{margin:8px 0}
+.match{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-top:6px}
+.match small{display:block;color:var(--muted)}
 .empty{padding:24px 12px;text-align:center;color:var(--muted)}
 input,select{font:inherit;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
 label{display:block;font-weight:700;font-size:.85rem;margin:8px 0 4px}
@@ -90,6 +95,7 @@ label{display:block;font-weight:700;font-size:.85rem;margin:8px 0 4px}
     <div class="top">
       <h1>Aisle Walk</h1>
       <button class="pill" id="modeBtn" aria-label="Switch between planning and shopping"></button>
+      <button class="pill" id="addBtn" aria-label="Add your own item">+</button>
       <button class="pill" id="cartBtn" aria-label="Open cart"></button>
     </div>
     <input class="search" id="q" type="search" placeholder="Search all foods" autocomplete="off" aria-label="Search all foods">
@@ -104,8 +110,10 @@ label{display:block;font-weight:700;font-size:.85rem;margin:8px 0 4px}
 <script src="stores.js"></script>
 <script>
 "use strict";
-const BASE=["Produce","Bakery","Deli","Meat & seafood","Dairy & eggs","Frozen","Pantry","Snacks"];
+const HH="Household & other";
+const BASE=["Produce","Bakery","Deli","Meat & seafood","Dairy & eggs","Frozen","Pantry","Snacks",HH];
 const STORES={"Kroger":BASE.slice(),"Sam's Club":["Produce","Meat & seafood","Dairy & eggs","Deli","Bakery","Frozen","Pantry","Snacks"],"Walmart":["Produce","Deli","Bakery","Meat & seafood","Dairy & eggs","Frozen","Pantry","Snacks"]};
+for(const k in STORES) if(!STORES[k].includes(HH)) STORES[k].push(HH);
 const BULK=new Set(["Meat & seafood","Dairy & eggs","Frozen","Pantry","Snacks"]);
 let AISLES=BASE;
 const PROTEIN_TARGET=[170,180], FIBER_TARGET=30, SNACK_MIN=1;
@@ -113,10 +121,10 @@ const KEY="aisle-walk-v1";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-let S={cart:{},last:[],custom:[],mode:"plan",view:"aisle",aisle:0,q:"",sort:"fit",filters:[],store:"Kroger",orders:{},templates:[],unavail:{},avail:{},pack:{},showHidden:false};
+let S={cart:{},last:[],custom:[],mode:"plan",view:"aisle",aisle:0,q:"",sort:"fit",filters:[],store:"Kroger",orders:{},templates:[],unavail:{},avail:{},pins:[],pack:{},showHidden:false};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
 if(!STORES[S.store]) S.store="Kroger";
-function orderFor(){const o=S.orders[S.store];return (o&&o.length===BASE.length&&BASE.every(a=>o.includes(a)))?o:STORES[S.store];}
+function orderFor(){const o=S.orders[S.store];if(o){const v=o.filter((a,i)=>BASE.includes(a)&&o.indexOf(a)===i);BASE.forEach(a=>{if(!v.includes(a))v.push(a);});return v;}return STORES[S.store];}
 AISLES=orderFor(); if(S.aisle<0||S.aisle>=AISLES.length) S.aisle=0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
 
@@ -145,6 +153,7 @@ const SD=()=>((window.STORE_DATA||{})[S.store])||{};
 const unList=()=>S.unavail[S.store]||[];
 const availList=()=>(S.avail&&S.avail[S.store])||[];
 const dfltNo=f=>!f.custom&&(SD().no||[]).includes(+f.id);
+const isPinned=f=>!!f.custom||S.pins.includes(f.id);
 const isHidden=f=>unList().includes(f.id)||(dfltNo(f)&&!availList().includes(f.id));
 const packOf=f=>(S.pack[S.store]||{})[f.id]||(SD().packs||{})[f.id]||"";
 const visible=f=>S.showHidden||!isHidden(f);
@@ -167,8 +176,9 @@ function render(keepScroll){
   $("modeBtn").className="pill"+(S.mode==="shop"?" on":"");
   $("cartBtn").textContent=`Cart ${cartIds().length}`;
   $("cartBtn").className="pill"+(S.view==="cart"?" on":"");
+  $("addBtn").className="pill"+(S.view==="add"?" on":"");
   renderStrip();
-  if(S.q.trim()) renderSearch(); else if(S.view==="cart") renderCart(); else if(S.view==="order") renderOrder(); else renderAisle();
+  if(S.q.trim()) renderSearch(); else if(S.view==="cart") renderCart(); else if(S.view==="add") renderAdd(); else if(S.view==="order") renderOrder(); else renderAisle();
   if(keepScroll) window.scrollTo(0,y);
 }
 
@@ -195,10 +205,11 @@ function storeCtl(f){
   const chk=dfltNo(f)&&!availList().includes(f.id)?`<div class="dnote">Not found at ${esc(S.store)} when checked. Tap below if you see it there.</div>`:"";
   return `<div class="storectl">${chk}<button class="btn ghost" data-unav="${f.id}">${isHidden(f)?"Mark as sold at "+esc(S.store):"Not sold at "+esc(S.store)}</button><label for="pk${f.id}">Pack size at ${esc(S.store)}</label><input id="pk${f.id}" data-pack="${f.id}" value="${esc(packOf(f))}" placeholder="Example: 3 lb tray" maxlength="30"></div>`;
 }
+const pinCtl=f=>isPinned(f)?`<button class="btn ghost" data-unpin="${f.id}" style="margin-top:8px">Remove from Your adds</button>`:"";
 function detail(f){
-  if(f.custom) return `<div class="detail"><div class="dnote">You added this food, so there is no nutrition data for it.</div>${storeCtl(f)}</div>`;
+  if(f.custom) return `<div class="detail"><div class="dnote">Not in the guide, so no nutrition facts.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
   const cell=(l,v)=>`<div>${l}<b>${v}</b></div>`;
-  return `<div class="detail"><div class="dgrid">${cell("Calories",f.kcal)}${cell("Protein",f.p+" g")}${cell("Carbs",f.carb+" g")}${cell("Fiber",f.fi+" g")}${cell("Sugar",f.sug+" g")}${cell("Sat fat",f.sf+" g")}${cell("Sodium",f.na+" mg")}${cell("Nutri-Score",f.grade)}${cell("Fit score",f.fit+"/10")}</div><div class="dnote">Per ${esc(f.serving)}. ${f.pd} g protein per 100 kcal.</div>${storeCtl(f)}</div>`;
+  return `<div class="detail"><div class="dgrid">${cell("Calories",f.kcal)}${cell("Protein",f.p+" g")}${cell("Carbs",f.carb+" g")}${cell("Fiber",f.fi+" g")}${cell("Sugar",f.sug+" g")}${cell("Sat fat",f.sf+" g")}${cell("Sodium",f.na+" mg")}${cell("Nutri-Score",f.grade)}${cell("Fit score",f.fit+"/10")}</div><div class="dnote">Per ${esc(f.serving)}. ${f.pd} g protein per 100 kcal.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
 }
 function foodBtn(f){
   const sel=inCart(f.id), got=sel&&S.cart[f.id].got, ex=expanded.has(f.id);
@@ -211,8 +222,8 @@ function foodBtn(f){
 function renderAisle(){
   const a=S.aisle, name=AISLES[a];
   let items=aisleItems(a);
-  if(S.mode==="shop") items=items.filter(f=>inCart(f.id)).sort((x,y)=>(S.cart[x.id].got-S.cart[y.id].got)||(S.sort==="name"?x.name.localeCompare(y.name):bySort(x,y)));
-  if(S.mode==="plan") items=items.filter(f=>passes(f)&&visible(f));
+  if(S.mode==="shop") items=items.filter(f=>inCart(f.id)).sort((x,y)=>(S.cart[x.id].got-S.cart[y.id].got)||(+isPinned(y)-+isPinned(x))||(S.sort==="name"?x.name.localeCompare(y.name):bySort(x,y)));
+  if(S.mode==="plan") items=items.filter(f=>isPinned(f)?visible(f):(passes(f)&&visible(f)));
   const left=items.filter(f=>!S.cart[f.id]?.got).length;
   const lastHere=aisleItems(a).filter(f=>S.last.includes(f.id)&&!inCart(f.id));
   let h=`<h2>${esc(name)}</h2><p class="sub">${S.mode==="shop"?(items.length?`${left} left to grab`:"Nothing on your cart in this aisle"):`${items.length} foods, sorted by ${S.sort==="name"?"name":(SORTS[S.sort]||SORTS.fit)[0].toLowerCase()}. Tap to add.`}</p>`;
@@ -224,8 +235,10 @@ function renderAisle(){
     h+=filterChips();
   }
   if(items.length>1) h+=`<div class="row" style="margin-top:8px">${sortPicker()}</div>`;
-  if(!items.length&&S.mode==="plan") h+=`<div class="empty">No foods in this aisle match your filters.</div>`;
-  h+=`<ul>${items.map(f=>foodBtn(f)).join("")}</ul>`;
+  if(!items.length&&S.mode==="plan") h+=`<div class="empty">${FOODS.some(f=>f.aisle===name&&!f.custom)?"No foods in this aisle match your filters.":"Nothing here yet. Tap + to add things like toilet paper."}</div>`;
+  const mine=items.filter(isPinned), rest=items.filter(f=>!isPinned(f));
+  if(mine.length) h+=`<div class="mine"><div class="mine-h">Your adds <span>${mine.length}</span></div><ul>${mine.map(f=>foodBtn(f)).join("")}</ul></div>`;
+  h+=`<ul>${rest.map(f=>foodBtn(f)).join("")}</ul>`;
   $("main").innerHTML=h;
   const sel=$("sort"); if(sel) sel.onchange=()=>{S.sort=sel.value;save();render(true);};
   $("nav").innerHTML=`<button class="btn" data-nav="-1" ${a===0?"disabled":""}>Back</button>`+
@@ -266,16 +279,25 @@ function renderCart(){
     : `<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="startShop" ${ids.length?"":"disabled"}>Start shopping</button>`;
 }
 
-function customForm(name){
-  $("main").innerHTML=`<h2>Add a food</h2><p class="sub">It will be saved in your aisle for next time.</p><label for="cn">Name</label><input id="cn" value="${esc(name)}"><label for="ca">Aisle</label><select id="ca">${AISLES.map(a=>`<option>${esc(a)}</option>`).join("")}</select>`;
-  $("nav").innerHTML=`<button class="btn" id="cancelc">Cancel</button><button class="btn primary" id="savec">Add to cart</button>`;
-  $("savec").onclick=()=>{
-    const n=$("cn").value.trim(); if(!n) return;
-    const id="c"+Date.now().toString(36);
-    S.custom.push({id,name:n,aisle:$("ca").value}); S.cart[id]={q:1,got:false};
-    S.q="";$("q").value=""; refresh(); S.aisle=AISLES.indexOf($("ca").value); S.view="aisle"; save(); render(); toast("Added");
-  };
-  $("cancelc").onclick=()=>render();
+let draft={name:"",aisle:"",ref:null};
+function openAdd(name){draft={name:name||"",aisle:AISLES[S.aisle]||AISLES[0],ref:null};S.q="";$("q").value="";S.view="add";save();render();window.scrollTo(0,0);}
+function matchHtml(){
+  if(draft.ref!=null){const f=BYID.get(draft.ref);return `<div class="card" style="margin:8px 0"><b>Nutrition from the guide</b><div class="sub" style="margin:4px 0 0">${esc(f.name)} · ${esc(f.serving)} · ${f.p} g protein · fit ${f.fit}/10</div><button class="btn ghost" data-clearref="1" style="margin-top:8px">Use a different food</button></div>`;}
+  const q=draft.name.trim().toLowerCase(); if(q.length<2) return "";
+  const toks=q.split(/\s+/);
+  const ms=window.FOODS.map(f=>BYID.get(String(f[0]))).filter(f=>toks.every(t=>f.name.toLowerCase().includes(t))).slice(0,6);
+  return ms.length?`<div class="sub" style="margin:8px 0 0">Tap one to use its nutrition facts:</div>`+ms.map(f=>`<button class="match" data-pick="${f.id}"><b>${esc(f.name)}</b><small>${esc(f.aisle)} · ${esc(f.serving)} · ${f.p} g protein</small></button>`).join(""):"";
+}
+function renderAdd(){
+  $("main").innerHTML=`<h2>Add to your list</h2><p class="sub">Pick a food from the guide to get nutrition facts, or type anything else and choose an aisle.</p><label for="an">What do you need?</label><input id="an" value="${esc(draft.name)}" autocomplete="off" placeholder="Flank steak, toilet paper..."><div id="am">${matchHtml()}</div><label for="aa">Aisle</label><select id="aa" ${draft.ref!=null?"disabled":""}>${AISLES.map(a=>`<option ${a===(draft.ref!=null?BYID.get(draft.ref).aisle:draft.aisle)?"selected":""}>${esc(a)}</option>`).join("")}</select>`;
+  $("nav").innerHTML=`<button class="btn" data-view="aisle">Cancel</button><button class="btn primary" id="savea">Add to list</button>`;
+}
+function saveAdd(){
+  const n=($("an").value||"").trim(); if(!n&&draft.ref==null) return toast("Type what you need");
+  let aisle;
+  if(draft.ref!=null){const f=BYID.get(draft.ref);if(!S.pins.includes(f.id))S.pins.push(f.id);S.cart[f.id]=S.cart[f.id]||{q:1,got:false};aisle=f.aisle;}
+  else{aisle=$("aa").value;const id="c"+Date.now().toString(36);S.custom.push({id,name:n,aisle});S.cart[id]={q:1,got:false};}
+  refresh();S.aisle=Math.max(0,AISLES.indexOf(aisle));S.view="aisle";S.mode="plan";save();render();window.scrollTo(0,0);toast("Added to Your adds");
 }
 
 document.addEventListener("click",e=>{
@@ -301,7 +323,12 @@ document.addEventListener("click",e=>{
   if(t.dataset.view){S.view=t.dataset.view;save();render();return window.scrollTo(0,0);}
   if(t.dataset.jump){const f=BYID.get(t.dataset.jump);S.aisle=AISLES.indexOf(f.aisle);S.view="aisle";S.q="";$("q").value="";save();render();
     const el=document.querySelector(`[data-id="${f.id}"]`); if(el){expanded.add(f.id);render(true);const el2=document.querySelector(`[data-id="${f.id}"]`);const row=el2.closest(".food");row.scrollIntoView({block:"center"});row.classList.add("flash");} return;}
-  if(t.dataset.custom){return customForm(S.q.trim());}
+  if(t.dataset.custom){return openAdd(S.q.trim());}
+  if(t.id==="addBtn"){if(S.view==="add"){S.view="aisle";save();return render();}return openAdd("");}
+  if(t.id==="savea"){return saveAdd();}
+  if(t.dataset.pick){draft.ref=t.dataset.pick;draft.name=BYID.get(draft.ref).name;return renderAdd();}
+  if(t.dataset.clearref){draft.ref=null;return renderAdd();}
+  if(t.dataset.unpin){const id=t.dataset.unpin,f=BYID.get(id);if(f.custom){S.custom=S.custom.filter(c=>c.id!==id);delete S.cart[id];refresh();}else S.pins=S.pins.filter(x=>x!==id);expanded.delete(id);save();return render(true);}
   if(t.dataset.q){const c=S.cart[t.dataset.q];c.q=Math.max(1,Math.min(6,(c.q||1)+ +t.dataset.d));save();return render(true);}
   if(t.dataset.rm){delete S.cart[t.dataset.rm];save();return render(true);}
   if(t.id==="readd"){let n=0;for(const f of aisleItems(S.aisle)) if(S.last.includes(f.id)&&!inCart(f.id)){S.cart[f.id]={q:1,got:false};n++;} save();render(true);return toast(`Added ${n}`);}
@@ -317,6 +344,7 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{const i=e.target.closest&&e.target.closest("[data-pack]");if(!i)return;const m=S.pack[S.store]||(S.pack[S.store]={});const v=i.value.trim();if(v)m[i.dataset.pack]=v;else delete m[i.dataset.pack];save();render(true);});
 $("q").addEventListener("input",e=>{S.q=e.target.value;render();});
+document.addEventListener("input",e=>{if(e.target.id==="an"){draft.name=e.target.value;draft.ref=null;$("am").innerHTML=matchHtml();$("aa").disabled=false;}});
 $("q").value="";S.q="";
 $("store").addEventListener("change",e=>{const cur=AISLES[S.aisle];S.store=e.target.value;AISLES=orderFor();S.aisle=Math.max(0,AISLES.indexOf(cur));save();render();});
 function netState(){$("offline").hidden=navigator.onLine!==false;}
