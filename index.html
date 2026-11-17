@@ -9,25 +9,26 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Aisle Walk</title>
 <style>
-:root{--bg:#f4f6f2;--surface:#fff;--ink:#17201c;--muted:#5d6b64;--line:#dde3dd;--accent:#1f6f5c;--accent-ink:#fff;--soft:#e4efe9;--warn:#b4531a;--warn-bg:#fbeadd;
+:root{--bg:#f4f6f2;--surface:#fff;--ink:#17201c;--muted:#4a5851;--line:#dde3dd;--accent:#1f6f5c;--accent-ink:#fff;--soft:#e4efe9;--warn:#b4531a;--warn-bg:#fbeadd;
 --fa:#1e8a4c;--fb:#7fb83b;--fc:#e9b72c;--fd:#e2802a;--fe:#cf4a3a}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101613;--surface:#19211d;--ink:#eaf1ec;--muted:#9fb0a6;--line:#2a3630;--accent:#4fb89c;--accent-ink:#06130e;--soft:#1f2e27;--warn:#f0a066;--warn-bg:#35241a}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101613;--surface:#19211d;--ink:#eaf1ec;--muted:#b3c3b9;--line:#2a3630;--accent:#4fb89c;--accent-ink:#06130e;--soft:#1f2e27;--warn:#f0a066;--warn-bg:#35241a}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .app{max-width:560px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
-header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line)}
+header{background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left))}
 .top{display:flex;align-items:center;gap:10px}
 .top h1{font-size:1.15rem;margin:0;flex:1}
-.pill{padding:6px 12px;border-radius:999px;background:var(--soft);font-weight:700;font-size:.85rem}
+.pill{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:6px 14px;border-radius:999px;background:var(--soft);font-weight:700;font-size:.85rem}
 .pill.add{background:#0b4a36;color:#fff;font-size:1.05rem;padding:6px 16px;line-height:1.2}
 .pill.add.on{background:#06352a}
 .pill.on{background:var(--accent);color:var(--accent-ink)}
-.search{width:100%;margin-top:8px;padding:11px 14px;font:inherit;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-.strip{display:flex;gap:4px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+.search{flex:1;min-width:0;width:auto;padding:11px 14px;font:inherit;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.stripwrap{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(6px + env(safe-area-inset-top)) 0 6px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line)}
+.strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-right:40px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
 .strip::-webkit-scrollbar{display:none}
-.step{flex:1 0 auto;padding:6px 10px;border-radius:10px;font-size:.78rem;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.step{flex:1 0 auto;min-height:44px;padding:6px 14px;border-radius:10px;font-size:.78rem;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--line);white-space:nowrap}
 .step.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .step.has::after{content:" •"}
 main{padding:12px max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));flex:1}
@@ -74,10 +75,11 @@ nav.bar .btn{flex:1}
 .cartrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .cartrow:first-of-type{border-top:0}
 .qty{display:flex;align-items:center;gap:6px}
-.qty button{width:34px;height:34px;border-radius:10px;background:var(--soft);font-weight:800}
+.qty button{width:44px;height:44px;border-radius:10px;background:var(--soft);font-weight:800}
 .sortl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem;margin:0}.sortl select{width:auto;padding:8px 10px}
+.sortl{flex:0 0 auto}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-.chip{padding:8px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:.88rem}
+.chip{min-height:44px;padding:8px 16px;white-space:nowrap;flex:0 0 auto;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:.88rem}
 .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mine{background:var(--soft);border:2px solid var(--accent);border-radius:16px;padding:10px 10px 2px;margin:12px 0}
 .mine-h{font-weight:800;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
@@ -85,30 +87,62 @@ nav.bar .btn{flex:1}
 .match{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-top:6px}
 .match small{display:block;color:var(--muted)}
 .empty{padding:24px 12px;text-align:center;color:var(--muted)}
-input,select{font:inherit;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input,select{font:inherit;min-height:44px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
 label{display:block;font-weight:700;font-size:.85rem;margin:8px 0 4px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:9}
+
+.tools{display:flex;gap:8px;margin-top:8px;align-items:center}
+.top .back{font-size:1.2rem;padding:6px 16px}
+.cnt{font-size:.9rem;font-weight:700;color:var(--muted);margin-left:6px}
+.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;align-items:center;margin:8px 0}
+.scroll::-webkit-scrollbar{display:none}
+.qadd{display:flex;gap:8px;margin:8px 0}.qadd input{flex:1;min-width:0}.qadd .btn{flex:0 0 auto}
+.hint{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--soft);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:.88rem}
+.hint .btn{padding:8px 12px;min-height:44px;flex:0 0 auto}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:6px 0;font-size:.85rem;color:var(--muted)}
+.al{color:var(--accent)}
+.fit{white-space:nowrap}
+.cartrow{align-items:flex-start}
+.cartrow .tick{flex:0 0 44px;height:44px;display:grid;place-items:center}
+.cartrow .qty{display:flex;margin-top:4px}.cartrow .qty span{min-width:28px;text-align:center;font-weight:700}.cartrow .qty .ql{font-weight:500;color:var(--muted);font-size:.78rem;min-width:0;margin-left:4px;text-align:left}
+.cartrow.got .t{text-decoration:line-through;color:var(--muted)}
+.cartrow .x{width:44px;height:44px;padding:0;display:grid;place-items:center;flex:0 0 auto}
+.card summary{font-weight:800;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.btn.block{display:block;width:100%;margin-top:8px}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.sheet-card{position:relative;width:100%;max-width:560px;background:var(--surface);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.sheet-card h3{margin:0 0 4px;font-size:1.1rem}
+.sheet-card p{margin:6px 0 12px}
+.toast{display:flex;align-items:center;gap:12px}
+.toast button{color:var(--bg);text-decoration:underline;font-weight:800;min-height:44px;padding:0 6px}
+.updatebar{display:block;width:100%;text-align:center;border-radius:0;margin:0}
+body[data-v=cart] #tools,body[data-v=add] #tools,body[data-v=order] #tools,body[data-v=cart] #stripwrap,body[data-v=add] #stripwrap,body[data-v=order] #stripwrap,body[data-v=search] #stripwrap{display:none}
+body[data-v=cart] .pill.add,body[data-v=add] .pill.add{display:none}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<button class="warn updatebar" id="updateBar" hidden>New version ready. Tap to refresh.</button>
 <div class="app">
   <header>
     <div class="top">
-      <h1>Aisle Walk</h1>
+      <button class="pill back" id="backBtn" data-view="aisle" hidden aria-label="Back to aisles">&larr;</button>
+      <h1 id="title">Aisle Walk</h1>
       <button class="pill add" id="addBtn" aria-label="Add your own item">+</button>
       <!-- Planning/Shopping toggle hidden for now; logic kept in case we bring it back. -->
       <button class="pill" id="modeBtn" hidden aria-label="Switch between planning and shopping"></button>
-      <button class="pill" id="cartBtn" aria-label="Open cart"></button>
+      <button class="pill" id="cartBtn" aria-label="Open shopping list"></button>
     </div>
-    <input class="search" id="q" type="search" placeholder="Search all foods" autocomplete="off" aria-label="Search all foods">
-    <div class="row" style="margin-top:8px;justify-content:space-between"><label class="sortl">Store <select id="store" aria-label="Store"></select></label><button class="pill" id="orderBtn">Aisle order</button></div>
-    <div class="warn" id="offline" hidden style="margin:8px 0 0;padding:8px 12px;font-size:.85rem">Offline. Your cart still works and saves on this device.</div>
-    <div class="strip" id="strip" role="tablist"></div>
+    <div class="tools" id="tools"><input class="search" id="q" type="search" placeholder="Search all foods" autocomplete="off" aria-label="Search all foods"><button class="pill" id="storeBtn" aria-haspopup="dialog"></button></div>
+    <div class="warn" id="offline" hidden style="margin:8px 0 0;padding:8px 12px;font-size:.85rem">Offline. Your list still works and saves on this device.</div>
   </header>
+  <div class="stripwrap" id="stripwrap"><div class="strip" id="strip" role="tablist"></div></div>
   <main id="main"></main>
 </div>
 <nav class="bar"><div class="in" id="nav"></div></nav>
+<div class="sheet" id="sheet" hidden><div class="sheet-bg" data-close></div><div class="sheet-card" id="sheetc" role="dialog" aria-modal="true"></div></div>
 <script src="foods.js"></script>
 <script src="stores.js"></script>
 <script>
@@ -124,7 +158,7 @@ const KEY="aisle-walk-v1";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-let S={cart:{},last:[],custom:[],mode:"plan",view:"aisle",aisle:0,q:"",sort:"fit",filters:[],store:"Kroger",orders:{},templates:[],unavail:{},avail:{},pins:[],pack:{},showHidden:false};
+let S={cart:{},last:[],custom:[],mode:"plan",view:"aisle",aisle:0,q:"",sort:"fit",filters:[],store:"Kroger",orders:{},templates:[],unavail:{},avail:{},pins:[],pack:{},showHidden:false,hint:false};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
 if(!STORES[S.store]) S.store="Kroger";
 S.mode="plan"; // shopping mode hidden for now
@@ -142,9 +176,30 @@ let FOODS=allFoods(), BYID=new Map(FOODS.map(f=>[f.id,f]));
 function refresh(){FOODS=allFoods();BYID=new Map(FOODS.map(f=>[f.id,f]));}
 const inCart=id=>!!S.cart[id];
 const cartIds=()=>Object.keys(S.cart).filter(id=>BYID.has(id));
-const fitBadge=f=>f==null?"":`<span class="fit f${f}" title="Fit ${f}/10">${f}</span>`;
+const fitBadge=f=>f==null?"":`<span class="fit f${f}" title="Fit score ${f} out of 10" aria-label="Fit score ${f} out of 10">Fit ${f}</span>`;
 
-function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),1800);}
+let toastT=null;
+function toast(msg,undo){
+  document.querySelectorAll(".toast").forEach(x=>x.remove()); clearTimeout(toastT);
+  const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");
+  const m=document.createElement("span");m.textContent=msg;t.appendChild(m);
+  if(undo){const b=document.createElement("button");b.textContent="Undo";b.onclick=()=>{t.remove();undo();};t.appendChild(b);}
+  document.body.appendChild(t);toastT=setTimeout(()=>t.remove(),undo?6000:1800);
+}
+const snap=()=>JSON.stringify(S);
+function restore(str){const o=JSON.parse(str);for(const k in S)delete S[k];Object.assign(S,o);S.mode="plan";refresh();AISLES=orderFor();if(S.aisle<0||S.aisle>=AISLES.length)S.aisle=0;$("q").value=S.q||"";save();render(true);}
+let askFn=null,lastFocus=null;
+function openSheet(html){lastFocus=document.activeElement;$("sheetc").innerHTML=html;$("sheet").hidden=false;const b=$("sheetc").querySelector("button");if(b)b.focus();}
+function closeSheet(){$("sheet").hidden=true;$("sheetc").innerHTML="";if(lastFocus&&lastFocus.focus)try{lastFocus.focus();}catch(e){}}
+function ask(msg,okLabel,fn){askFn=fn;openSheet(`<h3>${esc(msg)}</h3><div class="row" style="margin-top:12px"><button class="btn" style="flex:1" data-close>Cancel</button><button class="btn primary" style="flex:1" id="askok">${esc(okLabel)}</button></div>`);}
+function storeMenu(){openSheet(`<h3>Shopping at</h3>`+Object.keys(STORES).map(n=>`<button class="btn block ${n===S.store?"primary":""}" data-setstore="${esc(n)}">${esc(n)}</button>`).join("")+`<button class="btn ghost block" data-view="order">Reorder aisles for ${esc(S.store)}</button><button class="btn ghost block" data-close>Close</button>`);}
+function listText(){
+  const ids=cartIds(); let t=`Grocery list (${S.store})\n`;
+  for(const a of AISLES){const its=ids.map(id=>BYID.get(id)).filter(f=>f.aisle===a);if(!its.length)continue;t+=`\n${a}\n`+its.map(f=>`${S.cart[f.id].got?"☑":"☐"} ${f.name}${packOf(f)?" ("+packOf(f)+")":""}`).join("\n")+"\n";}
+  return t;
+}
+let flashId=null;
+function flashRow(){if(!flashId)return;const el=document.querySelector(`[data-id="${flashId}"]`);flashId=null;if(el){const row=el.closest(".food");row.scrollIntoView({block:"center"});row.classList.add("flash");}}
 
 function totals(){
   let p=0,fi=0,snacks=0;
@@ -165,7 +220,7 @@ const passes=f=>S.filters.every(k=>FILTERS[k]&&FILTERS[k][1](f));
 function filterChips(){const n=FOODS.filter(isHidden).length;return `<div class="chips">${Object.entries(FILTERS).map(([k,v])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filters.includes(k)}">${v[0]}</button>`).join("")}${n?`<button class="chip" data-showhid="1" aria-pressed="${S.showHidden}">Show hidden (${n})</button>`:""}</div>`;}
 function bySort(x,y){return (SORTS[S.sort]||SORTS.fit)[1](x,y)||((y.fit??-1)-(x.fit??-1))||x.name.localeCompare(y.name);}
 function aisleItems(a){return FOODS.filter(f=>f.aisle===AISLES[a]).sort(S.sort==="name"?(x,y)=>x.name.localeCompare(y.name):bySort);}
-function sortPicker(){return `<label class="sortl">Sort by <select id="sort">${Object.entries(SORTS).map(([k,v])=>`<option value="${k}" ${S.sort===k?"selected":""}>${v[0]}</option>`).join("")}</select></label>`;}
+function sortPicker(){return `<label class="sortl">Sort <select id="sort" aria-label="Sort by">${Object.entries(SORTS).map(([k,v])=>`<option value="${k}" ${S.sort===k?"selected":""}>${v[0]}</option>`).join("")}</select></label>`;}
 function counts(){const c={};for(const id of cartIds()){const a=BYID.get(id).aisle;c[a]=(c[a]||0)+1;}return c;}
 
 function toggle(id){
@@ -178,20 +233,20 @@ function render(keepScroll){
   const y=window.scrollY;
   $("modeBtn").textContent=S.mode==="shop"?"Shopping":"Planning";
   $("modeBtn").className="pill"+(S.mode==="shop"?" on":"");
-  $("cartBtn").textContent=`Cart ${cartIds().length}`;
+  $("cartBtn").textContent=`List ${cartIds().length}`;
   $("cartBtn").className="pill"+(S.view==="cart"?" on":"");
   $("addBtn").className="pill add"+(S.view==="add"?" on":"");
+  const v=S.q.trim()?"search":S.view; document.body.dataset.v=v;
+  $("title").textContent={cart:"Shopping list",add:"Add item",order:"Aisle order"}[v]||"Aisle Walk";
+  $("backBtn").hidden=!(v==="cart"||v==="add"||v==="order");
   renderStrip();
   if(S.q.trim()) renderSearch(); else if(S.view==="cart") renderCart(); else if(S.view==="add") renderAdd(); else if(S.view==="order") renderOrder(); else renderAisle();
   if(keepScroll) window.scrollTo(0,y);
 }
 
-function renderStore(){
-  $("store").innerHTML=Object.keys(STORES).map(s=>`<option ${s===S.store?"selected":""}>${esc(s)}</option>`).join("");
-  $("orderBtn").className="pill"+(S.view==="order"?" on":"");
-}
+function renderStore(){ $("storeBtn").textContent=S.store+" ▾"; $("storeBtn").setAttribute("aria-label","Store: "+S.store+". Change store"); }
 function renderOrder(){
-  let h=`<h2>Aisle order: ${esc(S.store)}</h2><p class="sub">This is a typical layout. Move aisles to match the store you shop at.</p><ul>`+
+  let h=`<p class="sub">${esc(S.store)}: a typical layout. Move aisles to match how you walk the store.</p><ul>`+
    AISLES.map((a,i)=>`<li><div class="food plain" style="cursor:default"><span class="nm">${i+1}. ${esc(a)}</span><span class="qty"><button data-mv="${i}" data-d="-1" ${i===0?"disabled":""} aria-label="Move ${esc(a)} earlier">↑</button><button data-mv="${i}" data-d="1" ${i===AISLES.length-1?"disabled":""} aria-label="Move ${esc(a)} later">↓</button></span></div></li>`).join("")+`</ul><button class="btn ghost" id="resetOrder">Reset to typical order</button>`;
   $("main").innerHTML=h;
   $("nav").innerHTML=`<button class="btn primary" data-view="aisle">Done</button>`;
@@ -211,7 +266,7 @@ function storeCtl(f){
 }
 const pinCtl=f=>isPinned(f)?`<button class="btn ghost" data-unpin="${f.id}" style="margin-top:8px">Remove from Your adds</button>`:"";
 function detail(f){
-  if(f.custom) return `<div class="detail"><div class="dnote">Not in the guide, so no nutrition facts.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
+  if(f.custom) return `<div class="detail"><label for="rn${f.id}">Name</label><input id="rn${f.id}" data-rename="${f.id}" value="${esc(f.name)}" maxlength="60"><div class="dnote">Not in the guide, so no nutrition facts.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
   const cell=(l,v)=>`<div>${l}<b>${v}</b></div>`;
   return `<div class="detail"><div class="dgrid">${cell("Calories",f.kcal)}${cell("Protein",f.p+" g")}${cell("Carbs",f.carb+" g")}${cell("Fiber",f.fi+" g")}${cell("Sugar",f.sug+" g")}${cell("Sat fat",f.sf+" g")}${cell("Sodium",f.na+" mg")}${cell("Nutri-Score",f.grade)}${cell("Fit score",f.fit+"/10")}</div><div class="dnote">Per ${esc(f.serving)}. ${f.pd} g protein per 100 kcal.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
 }
@@ -220,40 +275,42 @@ function foodBtn(f){
   const last=S.last.includes(f.id)&&!sel&&S.mode==="plan"?`<span class="tag">last trip</span>`:"";
   const meta=f.custom?"Added by you":`${esc(f.serving)} · ${f.p} g protein`;
   const hid=isHidden(f)?`<span class="tag">not sold here</span>`:"", pk=packOf(f)?`<span class="tag">${esc(packOf(f))}</span>`:"";
-  return `<li><div class="food ${sel?"sel":""} ${got?"got":""}"><button class="tick" data-id="${f.id}" aria-pressed="${sel}" aria-label="${S.mode==="shop"?"Check off":"Add"} ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><button class="body" data-exp="${f.id}" aria-expanded="${ex}"><span class="nm">${esc(f.name)}${last}${pk}${hid}<small>${meta}</small></span>${fitBadge(f.fit)}<span class="chev" aria-hidden="true">▼</span></button></div>${ex?detail(f):""}</li>`;
+  return `<li><div class="food ${sel?"sel":""} ${got?"got":""}"><button class="tick" data-id="${f.id}" aria-pressed="${sel}" aria-label="${sel?"Remove":"Add"} ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><button class="body" data-exp="${f.id}" aria-expanded="${ex}"><span class="nm">${esc(f.name)}${last}${pk}${hid}<small>${meta}</small></span>${fitBadge(f.fit)}<svg class="chev" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>${ex?detail(f):""}</li>`;
 }
 
+let noteOpen=false;
 function renderAisle(){
   const a=S.aisle, name=AISLES[a];
-  let items=aisleItems(a);
-  if(S.mode==="shop") items=items.filter(f=>inCart(f.id)).sort((x,y)=>(S.cart[x.id].got-S.cart[y.id].got)||(+isPinned(y)-+isPinned(x))||(S.sort==="name"?x.name.localeCompare(y.name):bySort(x,y)));
-  if(S.mode==="plan") items=items.filter(f=>isPinned(f)?visible(f):(passes(f)&&visible(f)));
-  const left=items.filter(f=>!S.cart[f.id]?.got).length;
-  const lastHere=aisleItems(a).filter(f=>S.last.includes(f.id)&&!inCart(f.id));
-  let h=`<h2>${esc(name)}</h2><p class="sub">${S.mode==="shop"?(items.length?`${left} left to grab`:"Nothing on your cart in this aisle"):`${items.length} foods, sorted by ${S.sort==="name"?"name":(SORTS[S.sort]||SORTS.fit)[0].toLowerCase()}. Tap to add.`}</p>`;
-  if(S.mode==="plan"&&lastHere.length) h+=`<button class="btn" id="readd">Re-add last trip (${lastHere.length})</button>`;
-  if(S.mode==="shop"&&items.length) h+=`<button class="btn ghost" id="skip">Skip aisle</button>`;
-  if(S.mode==="plan"&&SD().note) h+=`<p class="sub">${esc(SD().note)}</p>`;
-  if(S.store==="Sam's Club"&&BULK.has(name)) h+=`<p class="sub">Sam's sells most of these in larger packs. Check the pack size before you add.</p>`;
-  if(S.mode==="plan"){
-    h+=filterChips();
+  const all=aisleItems(a);
+  let items=all.filter(f=>isPinned(f)?visible(f):(passes(f)&&visible(f)));
+  const total=all.filter(f=>isPinned(f)||visible(f)).length;
+  const lastHere=all.filter(f=>S.last.includes(f.id)&&!inCart(f.id));
+  const note=[SD().note,(S.store==="Sam's Club"&&BULK.has(name))?"Sam's sells most of these in larger packs. Check the pack size before you add.":""].filter(Boolean).join(" ");
+  let h=`<h2>${esc(name)}<span class="cnt">${items.length===total?items.length+" foods":items.length+" of "+total}</span></h2>`;
+  h+=`<form class="qadd" id="qaddf"><input id="qa" placeholder="Add to ${esc(name)}: flank steak, paper towels..." maxlength="60" aria-label="Quick add to ${esc(name)}" autocomplete="off"><button class="btn primary" type="submit">Add</button></form>`;
+  if(!S.hint) h+=`<div class="hint"><span>Tap the box to add to your list. Tap a name for nutrition and store notes.</span><button class="btn" data-hint="1">Got it</button></div>`;
+  if(lastHere.length) h+=`<button class="btn" id="readd" style="width:100%;margin-bottom:6px">Re-add last trip (${lastHere.length})</button>`;
+  if(note) h+=`<button class="chip" data-note="1" aria-expanded="${noteOpen}" style="margin:2px 0">${noteOpen?"Hide":"About"} stock at ${esc(S.store)}</button>`+(noteOpen?`<div class="note">${esc(note)}</div>`:"");
+  h+=`<div class="chips scroll">${items.length>1?sortPicker():""}${Object.entries(FILTERS).map(([k,v])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filters.includes(k)}">${v[0]}</button>`).join("")}${FOODS.filter(isHidden).length?`<button class="chip" data-showhid="1" aria-pressed="${S.showHidden}">Show hidden (${FOODS.filter(isHidden).length})</button>`:""}</div>`;
+  if(!items.length){
+    const hasFoods=FOODS.some(f=>f.aisle===name&&!f.custom);
+    h+=`<div class="empty">${hasFoods?"No foods in this aisle match your filters.":"Nothing here yet. Type above or tap + to add things like toilet paper."}${hasFoods&&S.filters.length?`<br><button class="btn" data-clearf="1" style="margin-top:10px">Clear filters</button>`:""}</div>`;
   }
-  if(items.length>1) h+=`<div class="row" style="margin-top:8px">${sortPicker()}</div>`;
-  if(!items.length&&S.mode==="plan") h+=`<div class="empty">${FOODS.some(f=>f.aisle===name&&!f.custom)?"No foods in this aisle match your filters.":"Nothing here yet. Tap + to add things like toilet paper."}</div>`;
   const mine=items.filter(isPinned), rest=items.filter(f=>!isPinned(f));
   if(mine.length) h+=`<div class="mine"><div class="mine-h">Your adds <span>${mine.length}</span></div><ul>${mine.map(f=>foodBtn(f)).join("")}</ul></div>`;
   h+=`<ul>${rest.map(f=>foodBtn(f)).join("")}</ul>`;
   $("main").innerHTML=h;
   const sel=$("sort"); if(sel) sel.onchange=()=>{S.sort=sel.value;save();render(true);};
   $("nav").innerHTML=(a===0?"":`<button class="btn" data-nav="-1">Back</button>`)+
-    (a<AISLES.length-1?`<button class="btn primary" data-nav="1">Next: ${esc(AISLES[a+1])}</button>`:`<button class="btn primary" data-view="cart">Review cart</button>`);
+    (a<AISLES.length-1?`<button class="btn primary" data-nav="1">Next: ${esc(AISLES[a+1])}</button>`:`<button class="btn primary" data-view="cart">Review list</button>`);
+  flashRow();
 }
 
 function renderSearch(){
   const q=S.q.trim().toLowerCase();
-  const res=FOODS.filter(f=>f.name.toLowerCase().includes(q)).filter(visible).sort(bySort).slice(0,40);
-  let h=`<h2>Search</h2><p class="sub">${res.length} match${res.length===1?"":"es"} for “${esc(S.q.trim())}”. Tap a food to jump to its aisle.</p><ul>`+
-    res.map(f=>`<li><button class="food jump" data-jump="${f.id}"><span class="box" aria-hidden="true"></span><span class="nm">${esc(f.name)}<small>${esc(f.aisle)}${f.serving?" · "+esc(f.serving):""}</small></span>${fitBadge(f.fit)}</button></li>`).join("")+`</ul>`;
+  const all=FOODS.filter(f=>f.name.toLowerCase().includes(q)).filter(visible).sort(bySort);const res=all.slice(0,40);
+  let h=`<h2>Search</h2><p class="sub">${res.length} match${res.length===1?"":"es"} for “${esc(S.q.trim())}”. Tap a food to jump to its aisle.${all.length>40?" Showing the first 40, so keep typing to narrow it down.":""}</p><ul>`+
+    res.map(f=>`<li><button class="food jump" data-jump="${f.id}"><span class="box" aria-hidden="true"></span><span class="nm">${esc(f.name)}<small><b class="al">${esc(f.aisle)}</b>${f.serving?" · "+esc(f.serving):""}</small></span>${fitBadge(f.fit)}</button></li>`).join("")+`</ul>`;
   h+=`<button class="btn" data-custom="1">Not in the guide? Add “${esc(S.q.trim())}”</button>`;
   $("main").innerHTML=h;
   $("nav").innerHTML=`<button class="btn" id="clearq">Clear search</button>`;
@@ -263,24 +320,24 @@ function renderCart(){
   const ids=cartIds(), t=totals();
   const [lo,hi]=PROTEIN_TARGET;
   const pPct=Math.min(100,100*t.p/hi), fPct=Math.min(100,100*t.fi/FIBER_TARGET);
-  let h=`<h2>Cart</h2><p class="sub">${ids.length} item${ids.length===1?"":"s"}. Set servings per day for each food.</p>`;
-  h+=`<div class="card"><div class="tally"><div><b>~${t.p} g</b>protein / day<div class="bar-track"><i style="width:${pPct}%"></i></div><small>Weekday target ${lo}-${hi} g</small></div><div><b>~${t.fi} g</b>fiber / day<div class="bar-track"><i style="width:${fPct}%"></i></div><small>Target ${FIBER_TARGET} g+</small></div></div></div>`;
-  if(ids.length&&t.p<lo) h+=`<div class="warn">Your picks cover about ${t.p} g protein a day. Add proteins or raise servings to reach ${lo} g.</div>`;
-  if(ids.length&&t.snacks<SNACK_MIN) h+=`<div class="warn">No snacks in your cart. Add at least ${SNACK_MIN} so you don't run out.</div>`;
-  if(!ids.length) h+=`<div class="empty">Your cart is empty. Walk the aisles and tap foods to add them.</div>`;
+  const got=ids.filter(id=>S.cart[id].got).length;
+  let h=`<p class="sub">${ids.length?`${got} of ${ids.length} checked off. Tap the box when it's in your basket.`:""}</p>`;
+  if(!ids.length) h+=`<div class="empty">Your list is empty. Walk the aisles and tap foods to add them, or tap + to add your own.</div>`;
   for(const a of AISLES){
-    const its=ids.map(id=>BYID.get(id)).filter(f=>f.aisle===a);
+    const its=ids.map(id=>BYID.get(id)).filter(f=>f.aisle===a).sort((x,y)=>(!!S.cart[x.id].got)-(!!S.cart[y.id].got));
     if(!its.length) continue;
-    h+=`<div class="card"><b>${esc(a)}</b>`+its.map(f=>{const q=S.cart[f.id].q||1;return `<div class="cartrow"><span class="nm">${esc(f.name)}${isHidden(f)?`<span class="tag">not sold at ${esc(S.store)}</span>`:""}<small>${f.serving?esc(f.serving)+" · ":""}${Math.round(f.p*q)} g protein/day</small></span><span class="qty"><button data-q="${f.id}" data-d="-1" aria-label="Fewer servings of ${esc(f.name)}">−</button><span>${q}×</span><button data-q="${f.id}" data-d="1" aria-label="More servings of ${esc(f.name)}">+</button></span><button class="btn ghost" data-rm="${f.id}" aria-label="Remove ${esc(f.name)}">✕</button></div>`;}).join("")+`</div>`;
+    h+=`<div class="card"><b>${esc(a)}</b>`+its.map(f=>{const q=S.cart[f.id].q||1,g=!!S.cart[f.id].got;
+      return `<div class="cartrow ${g?"got":""}"><button class="tick" data-got="${f.id}" aria-pressed="${g}" aria-label="Check off ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><span class="nm"><span class="t">${esc(f.name)}</span>${packOf(f)?`<span class="tag">${esc(packOf(f))}</span>`:""}${isHidden(f)?`<span class="tag">not sold at ${esc(S.store)}</span>`:""}<small>${f.custom?"Added by you":esc(f.serving)}</small><span class="qty"><button data-q="${f.id}" data-d="-1" aria-label="Fewer servings of ${esc(f.name)}">−</button><span>${q}×</span><button data-q="${f.id}" data-d="1" aria-label="More servings of ${esc(f.name)}">+</button><span class="ql">servings/day</span></span></span><button class="btn ghost x" data-rm="${f.id}" aria-label="Remove ${esc(f.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`;}).join("")+`</div>`;
   }
-  if(S.mode==="plan"){
-    h+=`<div class="card"><b>Saved trips</b>`+(S.templates.length?S.templates.map(t=>`<div class="cartrow"><span class="nm">${esc(t.name)}<small>${t.items.length} items</small></span><button class="btn" data-tload="${t.id}">Load</button><button class="btn ghost" data-tadd="${t.id}">Add</button><button class="btn ghost" data-tdel="${t.id}" aria-label="Delete ${esc(t.name)}">✕</button></div>`).join(""):`<p class="sub" style="margin:8px 0">Save this cart, like "heavy lift week", to reload it later.</p>`)+
-      `<label for="tname">Name this cart</label><div class="row"><input id="tname" placeholder="Heavy lift week" style="flex:1"><button class="btn primary" id="tsave" ${ids.length?"":"disabled"}>Save</button></div></div>`;
-  }
+  if(ids.length) h+=`<div class="row" style="margin:6px 0"><button class="btn" id="copyList" style="flex:1">Share / copy list</button>${got?`<button class="btn ghost" id="uncheck">Uncheck all</button>`:""}</div>`;
+  let w="";
+  if(ids.length>=8&&t.p<lo) w+=`<div class="warn">Your picks cover about ${t.p} g protein a day. Add proteins or raise servings to reach ${lo} g.</div>`;
+  if(ids.length>=8&&t.snacks<SNACK_MIN) w+=`<div class="warn">No snacks on your list. Add at least ${SNACK_MIN} so you don't run out.</div>`;
+  h+=`<details class="card"><summary>Daily targets</summary><div class="tally"><div><b>~${t.p} g</b>protein / day<div class="bar-track"><i style="width:${pPct}%"></i></div><small>Weekday target ${lo}-${hi} g</small></div><div><b>~${t.fi} g</b>fiber / day<div class="bar-track"><i style="width:${fPct}%"></i></div><small>Target ${FIBER_TARGET} g+</small></div></div>${w}</details>`;
+  h+=`<div class="card"><b>Saved trips</b>`+(S.templates.length?S.templates.map(t=>`<div class="cartrow" style="align-items:center"><span class="nm">${esc(t.name)}<small>${t.items.length} items</small></span><button class="btn" data-tload="${t.id}">Load</button><button class="btn ghost" data-tadd="${t.id}">Add</button><button class="btn ghost x" data-tdel="${t.id}" aria-label="Delete ${esc(t.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`).join(""):`<p class="sub" style="margin:8px 0">Save this list, like "heavy lift week", to reload it later.</p>`)+
+    `<label for="tname">Name this list</label><div class="row"><input id="tname" placeholder="Heavy lift week" style="flex:1"><button class="btn primary" id="tsave" ${ids.length?"":"disabled"}>Save</button></div></div>`;
   $("main").innerHTML=h;
-  $("nav").innerHTML=S.mode==="shop"
-    ? `<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="finish">Finish trip</button>`
-    : `<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="startShop" hidden ${ids.length?"":"disabled"}>Start shopping</button>`;
+  $("nav").innerHTML=`<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="finish" ${ids.length?"":"disabled"}>Done shopping</button>`;
 }
 
 let draft={name:"",aisle:"",ref:null};
@@ -292,20 +349,41 @@ function matchHtml(){
   const ms=window.FOODS.map(f=>BYID.get(String(f[0]))).filter(f=>toks.every(t=>f.name.toLowerCase().includes(t))).slice(0,6);
   return ms.length?`<div class="sub" style="margin:8px 0 0">Tap one to use its nutrition facts:</div>`+ms.map(f=>`<button class="match" data-pick="${f.id}"><b>${esc(f.name)}</b><small>${esc(f.aisle)} · ${esc(f.serving)} · ${f.p} g protein</small></button>`).join(""):"";
 }
+const COMMON=["Toilet paper","Paper towels","Dish soap","Trash bags","Laundry detergent","Sponges"];
 function renderAdd(){
-  $("main").innerHTML=`<h2>Add to your list</h2><p class="sub">Pick a food from the guide to get nutrition facts, or type anything else and choose an aisle.</p><label for="an">What do you need?</label><input id="an" value="${esc(draft.name)}" autocomplete="off" placeholder="Flank steak, toilet paper..."><div id="am">${matchHtml()}</div><label for="aa">Aisle</label><select id="aa" ${draft.ref!=null?"disabled":""}>${AISLES.map(a=>`<option ${a===(draft.ref!=null?BYID.get(draft.ref).aisle:draft.aisle)?"selected":""}>${esc(a)}</option>`).join("")}</select>`;
+  const recent=[...new Set(S.custom.slice().reverse().map(c=>c.name))].slice(0,5).filter(n=>!COMMON.includes(n));
+  const quick=COMMON.map(n=>[n,HH]).concat(recent.map(n=>[n,(S.custom.find(c=>c.name===n)||{}).aisle||HH]));
+  $("main").innerHTML=`<p class="sub">Pick a food from the guide to get nutrition facts, or type anything else and choose an aisle.</p><label for="an">What do you need?</label><input id="an" value="${esc(draft.name)}" autocomplete="off" placeholder="Flank steak, toilet paper..."><div id="am">${matchHtml()}</div><label for="aa">Aisle</label><select id="aa" ${draft.ref!=null?"disabled":""}>${AISLES.map(a=>`<option ${a===(draft.ref!=null?BYID.get(draft.ref).aisle:draft.aisle)?"selected":""}>${esc(a)}</option>`).join("")}</select><label>Quick picks</label><div class="chips">${quick.map(([n,ai])=>`<button class="chip" data-quick="${esc(n)}" data-qaisle="${esc(ai)}">${esc(n)}</button>`).join("")}</div>`;
   $("nav").innerHTML=`<button class="btn" data-view="aisle">Cancel</button><button class="btn primary" id="savea">Add to list</button>`;
 }
 function saveAdd(){
   const n=($("an").value||"").trim(); if(!n&&draft.ref==null) return toast("Type what you need");
-  let aisle;
-  if(draft.ref!=null){const f=BYID.get(draft.ref);if(!S.pins.includes(f.id))S.pins.push(f.id);S.cart[f.id]=S.cart[f.id]||{q:1,got:false};aisle=f.aisle;}
-  else{aisle=$("aa").value;const id="c"+Date.now().toString(36);S.custom.push({id,name:n,aisle});S.cart[id]={q:1,got:false};}
-  refresh();S.aisle=Math.max(0,AISLES.indexOf(aisle));S.view="aisle";S.mode="plan";save();render();window.scrollTo(0,0);toast("Added to Your adds");
+  const before=snap(); let aisle,newId;
+  if(draft.ref!=null){const f=BYID.get(draft.ref);if(!S.pins.includes(f.id))S.pins.push(f.id);S.cart[f.id]=S.cart[f.id]||{q:1,got:false};aisle=f.aisle;newId=f.id;}
+  else{aisle=$("aa").value;const id="c"+Date.now().toString(36);S.custom.push({id,name:n,aisle});S.cart[id]={q:1,got:false};newId=id;}
+  refresh();S.aisle=Math.max(0,AISLES.indexOf(aisle));S.view="aisle";S.mode="plan";save();flashId=newId;render();window.scrollTo(0,0);flashRow();toast("Added to Your adds",()=>restore(before));
 }
 
 document.addEventListener("click",e=>{
+  if(e.target.dataset&&e.target.dataset.close!==undefined) return closeSheet();
+  if(e.target.id==="updateBar") return location.reload();
   const t=e.target.closest("button"); if(!t) return;
+  if(t.dataset.close!==undefined) return closeSheet();
+  if(t.id==="askok"){const f=askFn;askFn=null;closeSheet();return f&&f();}
+  if(t.id==="storeBtn") return storeMenu();
+  if(t.dataset.setstore){const cur=AISLES[S.aisle];S.store=t.dataset.setstore;AISLES=orderFor();S.aisle=Math.max(0,AISLES.indexOf(cur));S.view="aisle";save();closeSheet();render();return window.scrollTo(0,0);}
+  if(t.dataset.hint){S.hint=true;save();return render(true);}
+  if(t.dataset.note){noteOpen=!noteOpen;return render(true);}
+  if(t.dataset.clearf){S.filters=[];save();return render(true);}
+  if(t.dataset.got){const c=S.cart[t.dataset.got];if(c)c.got=!c.got;save();return render(true);}
+  if(t.id==="uncheck"){for(const id in S.cart)S.cart[id].got=false;save();return render(true);}
+  if(t.dataset.quick){draft={name:t.dataset.quick,aisle:t.dataset.qaisle||HH,ref:null};return renderAdd();}
+  if(t.id==="copyList"){const txt=listText();
+    if(navigator.share){navigator.share({text:txt}).catch(()=>{});return;}
+    const done=()=>toast("List copied");
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,()=>toast("Couldn't copy"));}
+    else{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done();}catch(x){toast("Couldn't copy");}ta.remove();}
+    return;}
   if(t.dataset.id){return toggle(t.dataset.id);}
   if(t.dataset.unav){const id=t.dataset.unav,f=BYID.get(id);
     if(isHidden(f)){S.unavail[S.store]=unList().filter(x=>x!==id);if(dfltNo(f)){const a=availList().slice();if(!a.includes(id))a.push(id);(S.avail=S.avail||{})[S.store]=a;}}
@@ -316,15 +394,17 @@ document.addEventListener("click",e=>{
   if(t.dataset.filter){const k=t.dataset.filter;S.filters=S.filters.includes(k)?S.filters.filter(x=>x!==k):S.filters.concat(k);save();return render(true);}
   if(t.dataset.mv){const i=+t.dataset.mv,j=i+ +t.dataset.d,o=AISLES.slice();if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];return setOrder(o);}
   if(t.id==="resetOrder"){delete S.orders[S.store];const cur=AISLES[S.aisle];AISLES=orderFor();S.aisle=Math.max(0,AISLES.indexOf(cur));save();return render(true);}
-  if(t.id==="orderBtn"){S.view=S.view==="order"?"aisle":"order";S.q="";$("q").value="";save();render();return window.scrollTo(0,0);}
   if(t.id==="tsave"){const n=$("tname").value.trim()||("Trip "+(S.templates.length+1));S.templates.push({id:"t"+Date.now().toString(36),name:n,items:cartIds().map(id=>({id,q:S.cart[id].q||1}))});save();render(true);return toast("Saved");}
   if(t.dataset.tload||t.dataset.tadd){const tp=S.templates.find(x=>x.id===(t.dataset.tload||t.dataset.tadd));if(!tp)return;
-    if(t.dataset.tload)S.cart={};let miss=0;for(const it of tp.items){if(BYID.has(it.id))S.cart[it.id]={q:it.q,got:false};else miss++;}
-    save();render(true);return toast(miss?`Loaded. ${miss} custom item${miss>1?"s":""} no longer exist.`:"Loaded");}
-  if(t.dataset.tdel){S.templates=S.templates.filter(x=>x.id!==t.dataset.tdel);save();return render(true);}
+    const isLoad=!!t.dataset.tload;
+    const go=()=>{const before=snap();if(isLoad)S.cart={};let miss=0;for(const it of tp.items){if(BYID.has(it.id))S.cart[it.id]={q:it.q,got:false};else miss++;}
+      save();render(true);toast(miss?`Loaded. ${miss} custom item${miss>1?"s":""} no longer exist.`:"Loaded",()=>restore(before));};
+    if(isLoad&&cartIds().length) return ask("Replace your current list with this trip?","Replace",go);
+    return go();}
+  if(t.dataset.tdel){const before=snap();S.templates=S.templates.filter(x=>x.id!==t.dataset.tdel);save();render(true);return toast("Trip deleted",()=>restore(before));}
   if(t.dataset.go!==undefined){S.aisle=+t.dataset.go;S.view="aisle";S.q="";$("q").value="";save();render();return window.scrollTo(0,0);}
   if(t.dataset.nav){S.aisle+=+t.dataset.nav;save();render();return window.scrollTo(0,0);}
-  if(t.dataset.view){S.view=t.dataset.view;save();render();return window.scrollTo(0,0);}
+  if(t.dataset.view){if(!$("sheet").hidden)closeSheet();S.view=t.dataset.view;S.q="";$("q").value="";save();render();return window.scrollTo(0,0);}
   if(t.dataset.jump){const f=BYID.get(t.dataset.jump);S.aisle=AISLES.indexOf(f.aisle);S.view="aisle";S.q="";$("q").value="";save();render();
     const el=document.querySelector(`[data-id="${f.id}"]`); if(el){expanded.add(f.id);render(true);const el2=document.querySelector(`[data-id="${f.id}"]`);const row=el2.closest(".food");row.scrollIntoView({block:"center"});row.classList.add("flash");} return;}
   if(t.dataset.custom){return openAdd(S.q.trim());}
@@ -332,29 +412,37 @@ document.addEventListener("click",e=>{
   if(t.id==="savea"){return saveAdd();}
   if(t.dataset.pick){draft.ref=t.dataset.pick;draft.name=BYID.get(draft.ref).name;return renderAdd();}
   if(t.dataset.clearref){draft.ref=null;return renderAdd();}
-  if(t.dataset.unpin){const id=t.dataset.unpin,f=BYID.get(id);if(f.custom){S.custom=S.custom.filter(c=>c.id!==id);delete S.cart[id];refresh();}else S.pins=S.pins.filter(x=>x!==id);expanded.delete(id);save();return render(true);}
+  if(t.dataset.unpin){const before=snap();const id=t.dataset.unpin,f=BYID.get(id);if(f.custom){S.custom=S.custom.filter(c=>c.id!==id);delete S.cart[id];refresh();}else S.pins=S.pins.filter(x=>x!==id);expanded.delete(id);save();render(true);return toast("Removed from Your adds",()=>restore(before));}
   if(t.dataset.q){const c=S.cart[t.dataset.q];c.q=Math.max(1,Math.min(6,(c.q||1)+ +t.dataset.d));save();return render(true);}
-  if(t.dataset.rm){delete S.cart[t.dataset.rm];save();return render(true);}
+  if(t.dataset.rm){const before=snap();delete S.cart[t.dataset.rm];save();render(true);return toast("Removed from list",()=>restore(before));}
   if(t.id==="readd"){let n=0;for(const f of aisleItems(S.aisle)) if(S.last.includes(f.id)&&!inCart(f.id)){S.cart[f.id]={q:1,got:false};n++;} save();render(true);return toast(`Added ${n}`);}
   if(t.id==="skip"){if(S.aisle<AISLES.length-1){S.aisle++;}else S.view="cart";save();render();return window.scrollTo(0,0);}
   if(t.id==="clearq"){S.q="";$("q").value="";return render();}
   if(t.id==="startShop"){S.mode="shop";S.view="aisle";const c=counts();S.aisle=Math.max(0,AISLES.findIndex(a=>c[a]));for(const id in S.cart)S.cart[id].got=false;save();render();return window.scrollTo(0,0);}
   if(t.id==="finish"){
-    if(!confirm("Finish this trip? Your cart clears and these foods are tagged 'last trip' next time.")) return;
-    S.last=cartIds();S.cart={};S.mode="plan";S.view="aisle";S.aisle=0;save();render();return toast("Trip saved. Cart cleared.");
+    return ask('Done shopping? Your list clears, and these foods get a "last trip" tag next time.',"Done shopping",()=>{
+      const before=snap();S.last=cartIds();S.cart={};S.mode="plan";S.view="aisle";S.aisle=0;save();render();window.scrollTo(0,0);toast("Trip saved. List cleared.",()=>restore(before));});
   }
   if(t.id==="modeBtn"){S.mode=S.mode==="shop"?"plan":"shop";if(S.mode==="shop"){for(const id in S.cart)S.cart[id].got=false;const c=counts();S.aisle=Math.max(0,AISLES.findIndex(a=>c[a]));}S.view="aisle";save();render();return window.scrollTo(0,0);}
   if(t.id==="cartBtn"){S.view=S.view==="cart"?"aisle":"cart";S.q="";$("q").value="";save();render();return window.scrollTo(0,0);}
 });
-document.addEventListener("change",e=>{const i=e.target.closest&&e.target.closest("[data-pack]");if(!i)return;const m=S.pack[S.store]||(S.pack[S.store]={});const v=i.value.trim();if(v)m[i.dataset.pack]=v;else delete m[i.dataset.pack];save();render(true);});
+document.addEventListener("change",e=>{const rn=e.target.closest&&e.target.closest("[data-rename]");if(rn){const c=S.custom.find(x=>x.id===rn.dataset.rename);const v=rn.value.trim();if(c&&v){c.name=v;refresh();save();render(true);}return;}const i=e.target.closest&&e.target.closest("[data-pack]");if(!i)return;const m=S.pack[S.store]||(S.pack[S.store]={});const v=i.value.trim();if(v)m[i.dataset.pack]=v;else delete m[i.dataset.pack];save();render(true);});
 $("q").addEventListener("input",e=>{S.q=e.target.value;render();});
 document.addEventListener("input",e=>{if(e.target.id==="an"){draft.name=e.target.value;draft.ref=null;$("am").innerHTML=matchHtml();$("aa").disabled=false;}});
 $("q").value="";S.q="";
-$("store").addEventListener("change",e=>{const cur=AISLES[S.aisle];S.store=e.target.value;AISLES=orderFor();S.aisle=Math.max(0,AISLES.indexOf(cur));save();render();});
+document.addEventListener("submit",e=>{if(e.target.id!=="qaddf")return;e.preventDefault();
+  const n=($("qa").value||"").trim();if(!n)return;const before=snap();const id="c"+Date.now().toString(36);
+  S.custom.push({id,name:n,aisle:AISLES[S.aisle]});S.cart[id]={q:1,got:false};refresh();save();flashId=id;render(true);toast("Added to Your adds",()=>restore(before));});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
 function netState(){$("offline").hidden=navigator.onLine!==false;}
 window.addEventListener("online",netState);window.addEventListener("offline",netState);netState();
 render();
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    reg.addEventListener("updatefound",()=>{const nw=reg.installing;if(!nw)return;nw.addEventListener("statechange",()=>{if(nw.state==="installed"&&navigator.serviceWorker.controller)$("updateBar").hidden=false;});});
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)reg.update().catch(()=>{});});
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>
