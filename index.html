@@ -51,6 +51,10 @@ ul{list-style:none;margin:8px 0;padding:0;display:grid;gap:8px}
 .dgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 8px}
 .dgrid div{font-size:.78rem;color:var(--muted)}
 .dgrid b{display:block;font-size:1.05rem;color:var(--ink)}
+.recipes{margin-top:12px;display:grid;gap:8px}
+.recipe{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:.85rem}
+.recipe b{display:block;font-size:.92rem;margin-bottom:2px}
+.recipes a{color:var(--accent);font-weight:700;font-size:.85rem;padding:6px 0;display:inline-block}
 .storectl{margin-top:10px;display:grid;gap:4px}
 .dnote{margin-top:10px;font-size:.8rem;color:var(--muted)}
 .food.sel{border-color:var(--accent);background:var(--soft)}
@@ -160,6 +164,7 @@ li.dropat .food{outline:3px solid var(--accent)}
 <div class="sheet" id="sheet" hidden><div class="sheet-bg" data-close></div><div class="sheet-card" id="sheetc" role="dialog" aria-modal="true"></div></div>
 <script src="foods.js"></script>
 <script src="stores.js"></script>
+<script src="recipes.js"></script>
 <script>
 "use strict";
 const HH="Household & other";
@@ -280,10 +285,13 @@ function storeCtl(f){
   return `<div class="storectl">${chk}<button class="btn ghost" data-unav="${f.id}">${isHidden(f)?"Mark as sold at "+esc(S.store):"Not sold at "+esc(S.store)}</button><label for="pk${f.id}">Pack size at ${esc(S.store)}</label><input id="pk${f.id}" data-pack="${f.id}" value="${esc(packOf(f))}" placeholder="Example: 3 lb tray" maxlength="30"></div>`;
 }
 const pinCtl=f=>isPinned(f)?`<button class="btn ghost" data-unpin="${f.id}" style="margin-top:8px">Remove from Your adds</button>`:"";
+function recipesHtml(f){const r=(window.RECIPES||{})[f.id];if(!r)return "";
+  const q=encodeURIComponent(f.name.split(",")[0]+" healthy high protein recipe");
+  return `<div class="recipes"><b style="font-size:.85rem">Recipe ideas</b>${r.map(([t,m])=>`<div class="recipe"><b>${esc(t)}</b>${esc(m)}</div>`).join("")}<a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">More recipes &rarr;</a></div>`;}
 function detail(f){
   if(f.custom) return `<div class="detail"><label for="rn${f.id}">Name</label><input id="rn${f.id}" data-rename="${f.id}" value="${esc(f.name)}" maxlength="60"><div class="dnote">Not in the guide, so no nutrition facts.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
   const cell=(l,v)=>`<div>${l}<b>${v}</b></div>`;
-  return `<div class="detail"><div class="dgrid">${cell("Calories",f.kcal)}${cell("Protein",f.p+" g")}${cell("Carbs",f.carb+" g")}${cell("Fiber",f.fi+" g")}${cell("Sugar",f.sug+" g")}${cell("Sat fat",f.sf+" g")}${cell("Sodium",f.na+" mg")}${cell("Nutri-Score",f.grade)}${cell("Fit score",f.fit+"/10")}</div><div class="dnote">Per ${esc(f.serving)}. ${f.pd} g protein per 100 kcal.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
+  return `<div class="detail"><div class="dgrid">${cell("Calories",f.kcal)}${cell("Protein",f.p+" g")}${cell("Carbs",f.carb+" g")}${cell("Fiber",f.fi+" g")}${cell("Sugar",f.sug+" g")}${cell("Sat fat",f.sf+" g")}${cell("Sodium",f.na+" mg")}${cell("Nutri-Score",f.grade)}${cell("Fit score",f.fit+"/10")}</div><div class="dnote">Per ${esc(f.serving)}. ${f.pd} g protein per 100 kcal.</div>${recipesHtml(f)}${storeCtl(f)}${pinCtl(f)}</div>`;
 }
 function foodBtn(f){
   const sel=inCart(f.id), got=sel&&S.cart[f.id].got, ex=expanded.has(f.id);
@@ -305,7 +313,7 @@ function renderAisle(){
   h+=`<form class="qadd" id="qaddf"><input id="qa" placeholder="Quick add to ${esc(name)}" maxlength="60" aria-label="Quick add to ${esc(name)}" autocomplete="off"><button class="btn primary" type="submit">Add</button></form>`;
   if(lastHere.length) h+=`<button class="btn" id="readd" style="width:100%;margin-bottom:8px">Re-add last trip (${lastHere.length})</button>`;
   if(note) h+=`<button class="chip" data-note="1" aria-expanded="${noteOpen}" style="margin:0 0 8px">${noteOpen?"Hide":"Show"} stock info</button>`+(noteOpen?`<div class="note">${esc(note)}</div>`:"");
-  h+=`<div class="chips scroll">${items.length>1?sortPicker():""}${Object.entries(FILTERS).map(([k,v])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filters.includes(k)}">${v[0]}</button>`).join("")}${FOODS.filter(isHidden).length?`<button class="chip" data-showhid="1" aria-pressed="${S.showHidden}">Show hidden (${FOODS.filter(isHidden).length})</button>`:""}</div>`;
+  h+=`<div class="chips scroll">${items.length>1?sortPicker():""}${Object.entries(FILTERS).map(([k,v])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filters.includes(k)}">${v[0]}</button>`).join("")}${all.filter(isHidden).length?`<button class="chip" data-showhid="1" aria-pressed="${S.showHidden}">${S.showHidden?"Hide":"Show"} not sold here (${all.filter(isHidden).length})</button>`:""}</div>`;
   if(!items.length){
     const hasFoods=FOODS.some(f=>f.aisle===name&&!f.custom);
     h+=`<div class="empty">${hasFoods?"No foods in this aisle match your filters.":"Nothing here yet. Type above or tap + to add things like toilet paper."}${hasFoods&&S.filters.length?`<br><button class="btn" data-clearf="1" style="margin-top:10px">Clear filters</button>`:""}</div>`;
