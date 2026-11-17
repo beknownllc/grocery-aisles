@@ -21,6 +21,8 @@ header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + 
 .top{display:flex;align-items:center;gap:10px}
 .top h1{font-size:1.15rem;margin:0;flex:1}
 .pill{padding:6px 12px;border-radius:999px;background:var(--soft);font-weight:700;font-size:.85rem}
+.pill.add{background:#0b4a36;color:#fff;font-size:1.05rem;padding:6px 16px;line-height:1.2}
+.pill.add.on{background:#06352a}
 .pill.on{background:var(--accent);color:var(--accent-ink)}
 .search{width:100%;margin-top:8px;padding:11px 14px;font:inherit;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .strip{display:flex;gap:4px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
@@ -94,8 +96,9 @@ label{display:block;font-weight:700;font-size:.85rem;margin:8px 0 4px}
   <header>
     <div class="top">
       <h1>Aisle Walk</h1>
-      <button class="pill" id="modeBtn" aria-label="Switch between planning and shopping"></button>
-      <button class="pill" id="addBtn" aria-label="Add your own item">+</button>
+      <button class="pill add" id="addBtn" aria-label="Add your own item">+</button>
+      <!-- Planning/Shopping toggle hidden for now; logic kept in case we bring it back. -->
+      <button class="pill" id="modeBtn" hidden aria-label="Switch between planning and shopping"></button>
       <button class="pill" id="cartBtn" aria-label="Open cart"></button>
     </div>
     <input class="search" id="q" type="search" placeholder="Search all foods" autocomplete="off" aria-label="Search all foods">
@@ -124,6 +127,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 let S={cart:{},last:[],custom:[],mode:"plan",view:"aisle",aisle:0,q:"",sort:"fit",filters:[],store:"Kroger",orders:{},templates:[],unavail:{},avail:{},pins:[],pack:{},showHidden:false};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
 if(!STORES[S.store]) S.store="Kroger";
+S.mode="plan"; // shopping mode hidden for now
 function orderFor(){const o=S.orders[S.store];if(o){const v=o.filter((a,i)=>BASE.includes(a)&&o.indexOf(a)===i);BASE.forEach(a=>{if(!v.includes(a))v.push(a);});return v;}return STORES[S.store];}
 AISLES=orderFor(); if(S.aisle<0||S.aisle>=AISLES.length) S.aisle=0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
@@ -276,7 +280,7 @@ function renderCart(){
   $("main").innerHTML=h;
   $("nav").innerHTML=S.mode==="shop"
     ? `<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="finish">Finish trip</button>`
-    : `<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="startShop" ${ids.length?"":"disabled"}>Start shopping</button>`;
+    : `<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="startShop" hidden ${ids.length?"":"disabled"}>Start shopping</button>`;
 }
 
 let draft={name:"",aisle:"",ref:null};
