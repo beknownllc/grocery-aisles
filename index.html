@@ -13,6 +13,7 @@
 --fa:#1e8a4c;--fb:#7fb83b;--fc:#e9b72c;--fd:#e2802a;--fe:#cf4a3a}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101613;--surface:#19211d;--ink:#eaf1ec;--muted:#b3c3b9;--line:#2a3630;--accent:#4fb89c;--accent-ink:#06130e;--soft:#1f2e27;--warn:#f0a066;--warn-bg:#35241a}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -287,7 +288,7 @@ function renderAisle(){
   const lastHere=all.filter(f=>S.last.includes(f.id)&&!inCart(f.id));
   const note=[SD().note,(S.store==="Sam's Club"&&BULK.has(name))?"Sam's sells most of these in larger packs. Check the pack size before you add.":""].filter(Boolean).join(" ");
   let h=`<h2>${esc(name)}<span class="cnt">${items.length===total?items.length+" foods":items.length+" of "+total}</span></h2>`;
-  h+=`<form class="qadd" id="qaddf"><input id="qa" placeholder="Add to ${esc(name)}: flank steak, paper towels..." maxlength="60" aria-label="Quick add to ${esc(name)}" autocomplete="off"><button class="btn primary" type="submit">Add</button></form>`;
+  h+=`<form class="qadd" id="qaddf"><input id="qa" placeholder="Quick add to ${esc(name)}" maxlength="60" aria-label="Quick add to ${esc(name)}" autocomplete="off"><button class="btn primary" type="submit">Add</button></form>`;
   if(!S.hint) h+=`<div class="hint"><span>Tap the box to add to your list. Tap a name for nutrition and store notes.</span><button class="btn" data-hint="1">Got it</button></div>`;
   if(lastHere.length) h+=`<button class="btn" id="readd" style="width:100%;margin-bottom:6px">Re-add last trip (${lastHere.length})</button>`;
   if(note) h+=`<button class="chip" data-note="1" aria-expanded="${noteOpen}" style="margin:2px 0">${noteOpen?"Hide":"About"} stock at ${esc(S.store)}</button>`+(noteOpen?`<div class="note">${esc(note)}</div>`:"");
