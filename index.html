@@ -101,6 +101,7 @@ label{display:block;font-weight:700;font-size:.85rem;margin:8px 0 4px}
 </div>
 <nav class="bar"><div class="in" id="nav"></div></nav>
 <script src="foods.js"></script>
+<script src="stores.js"></script>
 <script>
 "use strict";
 const BASE=["Produce","Bakery","Deli","Meat & seafood","Dairy & eggs","Frozen","Pantry","Snacks"];
@@ -112,7 +113,7 @@ const KEY="aisle-walk-v1";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-let S={cart:{},last:[],custom:[],mode:"plan",view:"aisle",aisle:0,q:"",sort:"fit",filters:[],store:"Kroger",orders:{},templates:[],unavail:{},pack:{},showHidden:false};
+let S={cart:{},last:[],custom:[],mode:"plan",view:"aisle",aisle:0,q:"",sort:"fit",filters:[],store:"Kroger",orders:{},templates:[],unavail:{},avail:{},pack:{},showHidden:false};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
 if(!STORES[S.store]) S.store="Kroger";
 function orderFor(){const o=S.orders[S.store];return (o&&o.length===BASE.length&&BASE.every(a=>o.includes(a)))?o:STORES[S.store];}
@@ -140,12 +141,15 @@ function totals(){
 }
 const SORTS={fit:["Fit score",(x,y)=>(y.fit??-1)-(x.fit??-1)],protein:["Most protein",(x,y)=>y.p-x.p],fiber:["Most fiber",(x,y)=>y.fi-x.fi],satfat:["Lowest sat fat",(x,y)=>x.sf-y.sf],name:["A to Z",()=>0]};
 const FILTERS={fit7:["Fit 7+",f=>f.fit>=7],protein:["15 g+ protein",f=>f.p>=15],lowsat:["Low sat fat",f=>f.sf<=1.5]};
+const SD=()=>((window.STORE_DATA||{})[S.store])||{};
 const unList=()=>S.unavail[S.store]||[];
-const isHidden=f=>unList().includes(f.id);
-const packOf=f=>(S.pack[S.store]||{})[f.id]||"";
+const availList=()=>(S.avail&&S.avail[S.store])||[];
+const dfltNo=f=>!f.custom&&(SD().no||[]).includes(+f.id);
+const isHidden=f=>unList().includes(f.id)||(dfltNo(f)&&!availList().includes(f.id));
+const packOf=f=>(S.pack[S.store]||{})[f.id]||(SD().packs||{})[f.id]||"";
 const visible=f=>S.showHidden||!isHidden(f);
 const passes=f=>S.filters.every(k=>FILTERS[k]&&FILTERS[k][1](f));
-function filterChips(){const n=unList().length;return `<div class="chips">${Object.entries(FILTERS).map(([k,v])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filters.includes(k)}">${v[0]}</button>`).join("")}${n?`<button class="chip" data-showhid="1" aria-pressed="${S.showHidden}">Show hidden (${n})</button>`:""}</div>`;}
+function filterChips(){const n=FOODS.filter(isHidden).length;return `<div class="chips">${Object.entries(FILTERS).map(([k,v])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filters.includes(k)}">${v[0]}</button>`).join("")}${n?`<button class="chip" data-showhid="1" aria-pressed="${S.showHidden}">Show hidden (${n})</button>`:""}</div>`;}
 function bySort(x,y){return (SORTS[S.sort]||SORTS.fit)[1](x,y)||((y.fit??-1)-(x.fit??-1))||x.name.localeCompare(y.name);}
 function aisleItems(a){return FOODS.filter(f=>f.aisle===AISLES[a]).sort(S.sort==="name"?(x,y)=>x.name.localeCompare(y.name):bySort);}
 function sortPicker(){return `<label class="sortl">Sort by <select id="sort">${Object.entries(SORTS).map(([k,v])=>`<option value="${k}" ${S.sort===k?"selected":""}>${v[0]}</option>`).join("")}</select></label>`;}
@@ -188,7 +192,8 @@ function renderStrip(){
 
 const expanded=new Set();
 function storeCtl(f){
-  return `<div class="storectl"><button class="btn ghost" data-unav="${f.id}">${isHidden(f)?"Mark as sold at "+esc(S.store):"Not sold at "+esc(S.store)}</button><label for="pk${f.id}">Pack size at ${esc(S.store)}</label><input id="pk${f.id}" data-pack="${f.id}" value="${esc(packOf(f))}" placeholder="Example: 3 lb tray" maxlength="30"></div>`;
+  const chk=dfltNo(f)&&!availList().includes(f.id)?`<div class="dnote">Not found at ${esc(S.store)} when checked. Tap below if you see it there.</div>`:"";
+  return `<div class="storectl">${chk}<button class="btn ghost" data-unav="${f.id}">${isHidden(f)?"Mark as sold at "+esc(S.store):"Not sold at "+esc(S.store)}</button><label for="pk${f.id}">Pack size at ${esc(S.store)}</label><input id="pk${f.id}" data-pack="${f.id}" value="${esc(packOf(f))}" placeholder="Example: 3 lb tray" maxlength="30"></div>`;
 }
 function detail(f){
   if(f.custom) return `<div class="detail"><div class="dnote">You added this food, so there is no nutrition data for it.</div>${storeCtl(f)}</div>`;
@@ -213,6 +218,7 @@ function renderAisle(){
   let h=`<h2>${esc(name)}</h2><p class="sub">${S.mode==="shop"?(items.length?`${left} left to grab`:"Nothing on your cart in this aisle"):`${items.length} foods, sorted by ${S.sort==="name"?"name":(SORTS[S.sort]||SORTS.fit)[0].toLowerCase()}. Tap to add.`}</p>`;
   if(S.mode==="plan"&&lastHere.length) h+=`<button class="btn" id="readd">Re-add last trip (${lastHere.length})</button>`;
   if(S.mode==="shop"&&items.length) h+=`<button class="btn ghost" id="skip">Skip aisle</button>`;
+  if(S.mode==="plan"&&SD().note) h+=`<p class="sub">${esc(SD().note)}</p>`;
   if(S.store==="Sam's Club"&&BULK.has(name)) h+=`<p class="sub">Sam's sells most of these in larger packs. Check the pack size before you add.</p>`;
   if(S.mode==="plan"){
     h+=filterChips();
@@ -275,7 +281,10 @@ function customForm(name){
 document.addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t) return;
   if(t.dataset.id){return toggle(t.dataset.id);}
-  if(t.dataset.unav){const id=t.dataset.unav,l=unList().slice();const i=l.indexOf(id);i>=0?l.splice(i,1):l.push(id);S.unavail[S.store]=l;save();return render(true);}
+  if(t.dataset.unav){const id=t.dataset.unav,f=BYID.get(id);
+    if(isHidden(f)){S.unavail[S.store]=unList().filter(x=>x!==id);if(dfltNo(f)){const a=availList().slice();if(!a.includes(id))a.push(id);(S.avail=S.avail||{})[S.store]=a;}}
+    else{const l=unList().slice();l.push(id);S.unavail[S.store]=l;(S.avail=S.avail||{})[S.store]=availList().filter(x=>x!==id);}
+    save();return render(true);}
   if(t.dataset.showhid){S.showHidden=!S.showHidden;save();return render(true);}
   if(t.dataset.exp){const k=t.dataset.exp;expanded.has(k)?expanded.delete(k):expanded.add(k);return render(true);}
   if(t.dataset.filter){const k=t.dataset.filter;S.filters=S.filters.includes(k)?S.filters.filter(x=>x!==k):S.filters.concat(k);save();return render(true);}
