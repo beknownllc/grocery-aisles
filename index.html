@@ -180,7 +180,7 @@ function render(keepScroll){
   $("modeBtn").className="pill"+(S.mode==="shop"?" on":"");
   $("cartBtn").textContent=`Cart ${cartIds().length}`;
   $("cartBtn").className="pill"+(S.view==="cart"?" on":"");
-  $("addBtn").className="pill"+(S.view==="add"?" on":"");
+  $("addBtn").className="pill add"+(S.view==="add"?" on":"");
   renderStrip();
   if(S.q.trim()) renderSearch(); else if(S.view==="cart") renderCart(); else if(S.view==="add") renderAdd(); else if(S.view==="order") renderOrder(); else renderAisle();
   if(keepScroll) window.scrollTo(0,y);
