@@ -302,7 +302,6 @@ function renderAisle(){
   const note=[SD().note,(S.store==="Sam's Club"&&BULK.has(name))?"Sam's sells most of these in larger packs. Check the pack size before you add.":""].filter(Boolean).join(" ");
   let h=`<h2>${esc(name)}<span class="cnt">${items.length===total?items.length+" foods":items.length+" of "+total}</span></h2>`;
   h+=`<form class="qadd" id="qaddf"><input id="qa" placeholder="Quick add to ${esc(name)}" maxlength="60" aria-label="Quick add to ${esc(name)}" autocomplete="off"><button class="btn primary" type="submit">Add</button></form>`;
-  if(!S.hint) h+=`<div class="hint"><span>Tap the box to add to your list. Tap a name for nutrition and store notes.</span><button class="btn" data-hint="1">Got it</button></div>`;
   if(lastHere.length) h+=`<button class="btn" id="readd" style="width:100%;margin-bottom:8px">Re-add last trip (${lastHere.length})</button>`;
   if(note) h+=`<button class="chip" data-note="1" aria-expanded="${noteOpen}" style="margin:0 0 8px">${noteOpen?"Hide":"Show"} stock info</button>`+(noteOpen?`<div class="note">${esc(note)}</div>`:"");
   h+=`<div class="chips scroll">${items.length>1?sortPicker():""}${Object.entries(FILTERS).map(([k,v])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filters.includes(k)}">${v[0]}</button>`).join("")}${FOODS.filter(isHidden).length?`<button class="chip" data-showhid="1" aria-pressed="${S.showHidden}">Show hidden (${FOODS.filter(isHidden).length})</button>`:""}</div>`;
