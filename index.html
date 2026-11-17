@@ -100,6 +100,7 @@ label{display:block;font-weight:700;font-size:.85rem;margin:12px 0 6px}
 .cnt{font-size:.9rem;font-weight:700;color:var(--muted);margin-left:6px}
 .scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;align-items:center;margin:0 -16px 8px 0;padding-right:16px}
 .scroll::-webkit-scrollbar{display:none}
+.scroll,.strip{cursor:grab;-webkit-user-select:none;user-select:none}
 .qadd{display:flex;gap:8px;margin:0 0 8px}.qadd input{flex:1;min-width:0}.qadd .btn{flex:0 0 auto}
 .hint{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--soft);border-radius:12px;padding:4px 4px 4px 12px;margin:0 0 8px;font-size:.88rem}
 .hint .btn{padding:0 14px;min-height:44px;flex:0 0 auto;background:var(--surface)}
@@ -354,19 +355,40 @@ function renderCart(){
 }
 
 let draft={name:"",aisle:"",ref:null};
-function openAdd(name){draft={name:name||"",aisle:AISLES[S.aisle]||AISLES[0],ref:null};S.q="";$("q").value="";S.view="add";save();render();window.scrollTo(0,0);}
+const KW=[["Frozen","frozen|ice cream|pizza|popsicle|waffle|ice"],
+["Pantry","peanut butter|almond butter|broth|stock|soup|canned|sauce|dressing|cream of"],
+["Snacks","chips|crisps|popcorn|pretzel"],
+[HH,"toilet paper|paper towel|tissue|napkin|soap|detergent|trash bag|garbage bag|sponge|shampoo|conditioner|toothpaste|toothbrush|deodorant|cleaner|bleach|foil|plastic wrap|ziploc|zip bag|battery|batteries|light bulb|diaper|wipes|razor|floss|lotion|sunscreen|vitamin|bandage|candle|laundry|dryer sheet|dishwasher|mouthwash|cotton|pet food|dog food|cat food|litter"],
+["Meat & seafood","steak|beef|pork|chicken|turkey|fish|salmon|tuna steak|shrimp|sausage|bacon|brisket|ribs|roast|lamb|tilapia|cod|ground meat|ribeye|sirloin|flank|tenderloin|crab|lobster|scallop"],
+["Deli","deli|lunch meat|ham|salami|prosciutto|rotisserie|hummus|olives|sliced turkey"],
+["Dairy & eggs","milk|cheese|yogurt|yoghurt|egg|butter|cream|cottage|sour cream|kefir|creamer|half and half"],
+["Bakery","bread|bagel|tortilla|bun|muffin|roll|croissant|donut|cake|pita|naan|baguette"],
+["Snacks","chips|cookie|cracker|candy|popcorn|pretzel|granola|jerky|chocolate|snack|nuts|trail mix|protein bar|bar"],
+["Produce","apple|banana|lettuce|tomato|onion|potato|berry|berries|fruit|veggie|vegetable|spinach|kale|carrot|pepper|cucumber|avocado|lemon|lime|orange|grape|melon|garlic|broccoli|celery|herbs|mushroom|salad"],
+["Pantry","rice|pasta|bean|oil|sauce|cereal|flour|sugar|coffee|tea|peanut butter|spice|salt|vinegar|oats|soup|broth|honey|syrup|canned|noodle|jam|mustard|ketchup|mayo|water|soda|juice"]];
+function guessAisle(name){
+  const q=(name||"").toLowerCase().trim(); if(q.length<2) return null;
+  for(const [a,re] of KW){ if(AISLES.includes(a) && new RegExp("(^|[^a-z])("+re+")s?($|[^a-z])").test(q)) return a; }
+  const toks=q.split(/\s+/);
+  const m=window.FOODS.filter(f=>toks.every(t=>f[1].toLowerCase().includes(t)));
+  if(m.length){const c={};m.forEach(f=>c[f[2]]=(c[f[2]]||0)+1);return Object.keys(c).sort((x,y)=>c[y]-c[x])[0];}
+  return null;
+}
+function openAdd(name){draft={name:name||"",aisle:guessAisle(name)||AISLES[S.aisle]||AISLES[0],ref:null};S.q="";$("q").value="";S.view="add";save();render();window.scrollTo(0,0);}
 function matchHtml(){
   if(draft.ref!=null){const f=BYID.get(draft.ref);return `<div class="card" style="margin:8px 0"><b>Nutrition from the guide</b><div class="sub" style="margin:4px 0 0">${esc(f.name)} · ${esc(f.serving)} · ${f.p} g protein · fit ${f.fit}/10</div><button class="btn ghost" data-clearref="1" style="margin-top:8px">Use a different food</button></div>`;}
   const q=draft.name.trim().toLowerCase(); if(q.length<2) return "";
   const toks=q.split(/\s+/);
   const ms=window.FOODS.map(f=>BYID.get(String(f[0]))).filter(f=>toks.every(t=>f.name.toLowerCase().includes(t))).slice(0,6);
-  return ms.length?`<div class="sub" style="margin:8px 0 0">Tap one to use its nutrition facts:</div>`+ms.map(f=>`<button class="match" data-pick="${f.id}"><b>${esc(f.name)}</b><small>${esc(f.aisle)} · ${esc(f.serving)} · ${f.p} g protein</small></button>`).join(""):"";
+  const mine=S.custom.filter(c=>toks.every(t=>c.name.toLowerCase().includes(t))&&c.name.toLowerCase()!==q).slice(0,3);
+  const mh=mine.length?`<div class="sub" style="margin:8px 0 0">Your earlier adds:</div>`+mine.map(c=>`<button class="match" data-quick="${esc(c.name)}" data-qaisle="${esc(c.aisle)}"><b>${esc(c.name)}</b><small>${esc(c.aisle)}</small></button>`).join(""):"";
+  return mh+(ms.length?`<div class="sub" style="margin:8px 0 0">Tap one to use its nutrition facts:</div>`+ms.map(f=>`<button class="match" data-pick="${f.id}"><b>${esc(f.name)}</b><small>${esc(f.aisle)} · ${esc(f.serving)} · ${f.p} g protein</small></button>`).join(""):"");
 }
 const COMMON=["Toilet paper","Paper towels","Dish soap","Trash bags","Laundry detergent","Sponges"];
 function renderAdd(){
   const recent=[...new Set(S.custom.slice().reverse().map(c=>c.name))].slice(0,5).filter(n=>!COMMON.includes(n));
   const quick=COMMON.map(n=>[n,HH]).concat(recent.map(n=>[n,(S.custom.find(c=>c.name===n)||{}).aisle||HH]));
-  $("main").innerHTML=`<p class="sub">Pick a food from the guide to get nutrition facts, or type anything else and choose an aisle.</p><label for="an">What do you need?</label><input id="an" value="${esc(draft.name)}" autocomplete="off" placeholder="Flank steak, toilet paper..."><div id="am">${matchHtml()}</div><label for="aa">Aisle</label><select id="aa" ${draft.ref!=null?"disabled":""}>${AISLES.map(a=>`<option ${a===(draft.ref!=null?BYID.get(draft.ref).aisle:draft.aisle)?"selected":""}>${esc(a)}</option>`).join("")}</select><label>Quick picks</label><div class="chips">${quick.map(([n,ai])=>`<button class="chip" data-quick="${esc(n)}" data-qaisle="${esc(ai)}">${esc(n)}</button>`).join("")}</div>`;
+  $("main").innerHTML=`<p class="sub">Pick a food from the guide to get nutrition facts, or type anything else and choose an aisle.</p><label for="an">What do you need?</label><input id="an" value="${esc(draft.name)}" autocomplete="off" placeholder="Flank steak, toilet paper..."><div id="am">${matchHtml()}</div><label for="aa">Aisle</label><select id="aa" ${draft.ref!=null?"disabled":""}>${AISLES.map(a=>`<option ${a===(draft.ref!=null?BYID.get(draft.ref).aisle:draft.aisle)?"selected":""}>${esc(a)}</option>`).join("")}</select><div class="sub" id="ah" style="margin:6px 0 0"></div><label>Quick picks</label><div class="chips">${quick.map(([n,ai])=>`<button class="chip" data-quick="${esc(n)}" data-qaisle="${esc(ai)}">${esc(n)}</button>`).join("")}</div>`;
   $("nav").innerHTML=`<button class="btn" data-view="aisle">Cancel</button><button class="btn primary" id="savea">Add to list</button>`;
 }
 function saveAdd(){
@@ -442,11 +464,20 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{const rn=e.target.closest&&e.target.closest("[data-rename]");if(rn){const c=S.custom.find(x=>x.id===rn.dataset.rename);const v=rn.value.trim();if(c&&v){c.name=v;refresh();save();render(true);}return;}const i=e.target.closest&&e.target.closest("[data-pack]");if(!i)return;const m=S.pack[S.store]||(S.pack[S.store]={});const v=i.value.trim();if(v)m[i.dataset.pack]=v;else delete m[i.dataset.pack];save();render(true);});
 $("q").addEventListener("input",e=>{S.q=e.target.value;render();});
-document.addEventListener("input",e=>{if(e.target.id==="an"){draft.name=e.target.value;draft.ref=null;$("am").innerHTML=matchHtml();$("aa").disabled=false;}});
+document.addEventListener("input",e=>{if(e.target.id==="an"){draft.name=e.target.value;draft.ref=null;$("am").innerHTML=matchHtml();$("aa").disabled=false;
+  if(!draft.touched){const g=guessAisle(draft.name);if(g){draft.aisle=g;$("aa").value=g;$("ah").textContent="Aisle picked for you. Change it if it's wrong.";}else $("ah").textContent="";}}});
+document.addEventListener("change",e=>{if(e.target.id==="aa"){draft.touched=true;draft.aisle=e.target.value;$("ah").textContent="";}});
 $("q").value="";S.q="";
 document.addEventListener("submit",e=>{if(e.target.id!=="qaddf")return;e.preventDefault();
   const n=($("qa").value||"").trim();if(!n)return;const before=snap();const id="c"+Date.now().toString(36);
   S.custom.push({id,name:n,aisle:AISLES[S.aisle]});S.cart[id]={q:1,got:false};refresh();save();flashId=id;render(true);toast("Added to Your adds",()=>restore(before));});
+/* mouse drag + wheel scrolling for the horizontal rows (touch already scrolls) */
+let hs=null;
+document.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"||e.button!==0)return;const r=e.target.closest&&e.target.closest(".scroll,.strip");if(!r||e.target.closest("select"))return;hs={r,x:e.clientX,l:r.scrollLeft,moved:false};});
+document.addEventListener("pointermove",e=>{if(!hs)return;const dx=e.clientX-hs.x;if(Math.abs(dx)>5)hs.moved=true;if(hs.moved){hs.r.scrollLeft=hs.l-dx;e.preventDefault();}});
+document.addEventListener("pointerup",()=>{if(hs&&hs.moved){const m=hs;setTimeout(()=>{},0);window.__noClick=Date.now();}hs=null;});
+document.addEventListener("click",e=>{if(window.__noClick&&Date.now()-window.__noClick<150){e.stopPropagation();e.preventDefault();window.__noClick=0;}},true);
+document.addEventListener("wheel",e=>{const r=e.target.closest&&e.target.closest(".scroll,.strip");if(!r||r.scrollWidth<=r.clientWidth)return;if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){r.scrollLeft+=e.deltaY;e.preventDefault();}},{passive:false});
 let drag=null;
 document.addEventListener("pointerdown",e=>{const h=e.target.closest&&e.target.closest("[data-drag]");if(!h)return;e.preventDefault();const li=h.closest("li");drag={i:+h.dataset.drag,li,to:null};li.classList.add("dragging");try{h.setPointerCapture(e.pointerId);}catch(x){}});
 document.addEventListener("pointermove",e=>{if(!drag)return;const lis=[...document.querySelectorAll("#main li")];let to=lis.findIndex(l=>e.clientY<l.getBoundingClientRect().top+l.getBoundingClientRect().height/2);if(to<0)to=lis.length-1;drag.to=to;lis.forEach((l,k)=>l.classList.toggle("dropat",k===to&&to!==drag.i));});
