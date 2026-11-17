@@ -121,6 +121,11 @@ label{display:block;font-weight:700;font-size:.85rem;margin:8px 0 4px}
 .updatebar{display:block;width:100%;text-align:center;border-radius:0;margin:0}
 body[data-v=cart] #tools,body[data-v=add] #tools,body[data-v=order] #tools,body[data-v=cart] #stripwrap,body[data-v=add] #stripwrap,body[data-v=order] #stripwrap,body[data-v=search] #stripwrap{display:none}
 body[data-v=cart] .pill.add,body[data-v=add] .pill.add{display:none}
+.mine-h{position:sticky;top:calc(58px + env(safe-area-inset-top));background:var(--soft);z-index:3;padding:4px 0}
+.grip{flex:0 0 44px;height:44px;display:grid;place-items:center;color:var(--muted);font-weight:900;letter-spacing:-2px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+li.dragging{opacity:.55}
+li.dropat .food{outline:3px solid var(--accent)}
+.cartrow .qty .bl{font-weight:700;margin-right:8px;font-size:.85rem;min-width:0}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -196,7 +201,7 @@ function ask(msg,okLabel,fn){askFn=fn;openSheet(`<h3>${esc(msg)}</h3><div class=
 function storeMenu(){openSheet(`<h3>Shopping at</h3>`+Object.keys(STORES).map(n=>`<button class="btn block ${n===S.store?"primary":""}" data-setstore="${esc(n)}">${esc(n)}</button>`).join("")+`<button class="btn ghost block" data-view="order">Reorder aisles for ${esc(S.store)}</button><button class="btn ghost block" data-close>Close</button>`);}
 function listText(){
   const ids=cartIds(); let t=`Grocery list (${S.store})\n`;
-  for(const a of AISLES){const its=ids.map(id=>BYID.get(id)).filter(f=>f.aisle===a);if(!its.length)continue;t+=`\n${a}\n`+its.map(f=>`${S.cart[f.id].got?"☑":"☐"} ${f.name}${packOf(f)?" ("+packOf(f)+")":""}`).join("\n")+"\n";}
+  for(const a of AISLES){const its=ids.map(id=>BYID.get(id)).filter(f=>f.aisle===a);if(!its.length)continue;t+=`\n${a}\n`+its.map(f=>`${S.cart[f.id].got?"☑":"☐"} ${f.name}${(S.cart[f.id].n||1)>1?" x"+S.cart[f.id].n:""}${packOf(f)?" ("+packOf(f)+")":""}`).join("\n")+"\n";}
   return t;
 }
 let flashId=null;
@@ -247,8 +252,8 @@ function render(keepScroll){
 
 function renderStore(){ $("storeBtn").textContent=S.store+" ▾"; $("storeBtn").setAttribute("aria-label","Store: "+S.store+". Change store"); }
 function renderOrder(){
-  let h=`<p class="sub">${esc(S.store)}: a typical layout. Move aisles to match how you walk the store.</p><ul>`+
-   AISLES.map((a,i)=>`<li><div class="food plain" style="cursor:default"><span class="nm">${i+1}. ${esc(a)}</span><span class="qty"><button data-mv="${i}" data-d="-1" ${i===0?"disabled":""} aria-label="Move ${esc(a)} earlier">↑</button><button data-mv="${i}" data-d="1" ${i===AISLES.length-1?"disabled":""} aria-label="Move ${esc(a)} later">↓</button></span></div></li>`).join("")+`</ul><button class="btn ghost" id="resetOrder">Reset to typical order</button>`;
+  let h=`<p class="sub">${esc(S.store)}: a typical layout. Drag the ⋮⋮ handle or use the arrows to match how you walk the store.</p><ul>`+
+   AISLES.map((a,i)=>`<li><div class="food plain" style="cursor:default"><span class="grip" data-drag="${i}" aria-hidden="true">⋮⋮</span><span class="nm">${i+1}. ${esc(a)}</span><span class="qty"><button data-mv="${i}" data-d="-1" ${i===0?"disabled":""} aria-label="Move ${esc(a)} earlier">↑</button><button data-mv="${i}" data-d="1" ${i===AISLES.length-1?"disabled":""} aria-label="Move ${esc(a)} later">↓</button></span></div></li>`).join("")+`</ul><button class="btn ghost" id="resetOrder">Reset to typical order</button>`;
   $("main").innerHTML=h;
   $("nav").innerHTML=`<button class="btn primary" data-view="aisle">Done</button>`;
 }
@@ -327,14 +332,14 @@ function renderCart(){
   for(const a of AISLES){
     const its=ids.map(id=>BYID.get(id)).filter(f=>f.aisle===a).sort((x,y)=>(!!S.cart[x.id].got)-(!!S.cart[y.id].got));
     if(!its.length) continue;
-    h+=`<div class="card"><b>${esc(a)}</b>`+its.map(f=>{const q=S.cart[f.id].q||1,g=!!S.cart[f.id].got;
-      return `<div class="cartrow ${g?"got":""}"><button class="tick" data-got="${f.id}" aria-pressed="${g}" aria-label="Check off ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><span class="nm"><span class="t">${esc(f.name)}</span>${packOf(f)?`<span class="tag">${esc(packOf(f))}</span>`:""}${isHidden(f)?`<span class="tag">not sold at ${esc(S.store)}</span>`:""}<small>${f.custom?"Added by you":esc(f.serving)}</small><span class="qty"><button data-q="${f.id}" data-d="-1" aria-label="Fewer servings of ${esc(f.name)}">−</button><span>${q}×</span><button data-q="${f.id}" data-d="1" aria-label="More servings of ${esc(f.name)}">+</button><span class="ql">servings/day</span></span></span><button class="btn ghost x" data-rm="${f.id}" aria-label="Remove ${esc(f.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`;}).join("")+`</div>`;
+    h+=`<div class="card"><b>${esc(a)}</b>`+its.map(f=>{const g=!!S.cart[f.id].got;
+      return `<div class="cartrow ${g?"got":""}"><button class="tick" data-got="${f.id}" aria-pressed="${g}" aria-label="Check off ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><span class="nm"><span class="t">${esc(f.name)}</span>${packOf(f)?`<span class="tag">${esc(packOf(f))}</span>`:""}${isHidden(f)?`<span class="tag">not sold at ${esc(S.store)}</span>`:""}<small>${f.custom?"Added by you":esc(f.serving)}</small><span class="qty"><span class="bl">Buy</span><button data-b="${f.id}" data-d="-1" aria-label="Buy fewer ${esc(f.name)}">−</button><span>${S.cart[f.id].n||1}</span><button data-b="${f.id}" data-d="1" aria-label="Buy more ${esc(f.name)}">+</button></span></span><button class="btn ghost x" data-rm="${f.id}" aria-label="Remove ${esc(f.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`;}).join("")+`</div>`;
   }
   if(ids.length) h+=`<div class="row" style="margin:6px 0"><button class="btn" id="copyList" style="flex:1">Share / copy list</button>${got?`<button class="btn ghost" id="uncheck">Uncheck all</button>`:""}</div>`;
   let w="";
   if(ids.length>=8&&t.p<lo) w+=`<div class="warn">Your picks cover about ${t.p} g protein a day. Add proteins or raise servings to reach ${lo} g.</div>`;
   if(ids.length>=8&&t.snacks<SNACK_MIN) w+=`<div class="warn">No snacks on your list. Add at least ${SNACK_MIN} so you don't run out.</div>`;
-  h+=`<details class="card"><summary>Daily targets</summary><div class="tally"><div><b>~${t.p} g</b>protein / day<div class="bar-track"><i style="width:${pPct}%"></i></div><small>Weekday target ${lo}-${hi} g</small></div><div><b>~${t.fi} g</b>fiber / day<div class="bar-track"><i style="width:${fPct}%"></i></div><small>Target ${FIBER_TARGET} g+</small></div></div>${w}</details>`;
+  h+=`<details class="card"><summary>Daily targets</summary><div class="tally"><div><b>~${t.p} g</b>protein / day<div class="bar-track"><i style="width:${pPct}%"></i></div><small>Weekday target ${lo}-${hi} g</small></div><div><b>~${t.fi} g</b>fiber / day<div class="bar-track"><i style="width:${fPct}%"></i></div><small>Target ${FIBER_TARGET} g+</small></div></div>${w}${ids.length?`<div style="margin-top:10px"><b style="font-size:.85rem">Servings per day</b>`+ids.map(id=>BYID.get(id)).map(f=>`<div class="cartrow" style="align-items:center"><span class="nm">${esc(f.name)}<small>${f.custom?"Added by you":esc(f.serving)}</small></span><span class="qty"><button data-q="${f.id}" data-d="-1" aria-label="Fewer servings of ${esc(f.name)}">−</button><span>${S.cart[f.id].q||1}×</span><button data-q="${f.id}" data-d="1" aria-label="More servings of ${esc(f.name)}">+</button></span></div>`).join("")+`</div>`:""}</details>`;
   h+=`<div class="card"><b>Saved trips</b>`+(S.templates.length?S.templates.map(t=>`<div class="cartrow" style="align-items:center"><span class="nm">${esc(t.name)}<small>${t.items.length} items</small></span><button class="btn" data-tload="${t.id}">Load</button><button class="btn ghost" data-tadd="${t.id}">Add</button><button class="btn ghost x" data-tdel="${t.id}" aria-label="Delete ${esc(t.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`).join(""):`<p class="sub" style="margin:8px 0">Save this list, like "heavy lift week", to reload it later.</p>`)+
     `<label for="tname">Name this list</label><div class="row"><input id="tname" placeholder="Heavy lift week" style="flex:1"><button class="btn primary" id="tsave" ${ids.length?"":"disabled"}>Save</button></div></div>`;
   $("main").innerHTML=h;
@@ -395,10 +400,10 @@ document.addEventListener("click",e=>{
   if(t.dataset.filter){const k=t.dataset.filter;S.filters=S.filters.includes(k)?S.filters.filter(x=>x!==k):S.filters.concat(k);save();return render(true);}
   if(t.dataset.mv){const i=+t.dataset.mv,j=i+ +t.dataset.d,o=AISLES.slice();if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];return setOrder(o);}
   if(t.id==="resetOrder"){delete S.orders[S.store];const cur=AISLES[S.aisle];AISLES=orderFor();S.aisle=Math.max(0,AISLES.indexOf(cur));save();return render(true);}
-  if(t.id==="tsave"){const n=$("tname").value.trim()||("Trip "+(S.templates.length+1));S.templates.push({id:"t"+Date.now().toString(36),name:n,items:cartIds().map(id=>({id,q:S.cart[id].q||1}))});save();render(true);return toast("Saved");}
+  if(t.id==="tsave"){const n=$("tname").value.trim()||("Trip "+(S.templates.length+1));S.templates.push({id:"t"+Date.now().toString(36),name:n,items:cartIds().map(id=>({id,q:S.cart[id].q||1,n:S.cart[id].n||1}))});save();render(true);return toast("Saved");}
   if(t.dataset.tload||t.dataset.tadd){const tp=S.templates.find(x=>x.id===(t.dataset.tload||t.dataset.tadd));if(!tp)return;
     const isLoad=!!t.dataset.tload;
-    const go=()=>{const before=snap();if(isLoad)S.cart={};let miss=0;for(const it of tp.items){if(BYID.has(it.id))S.cart[it.id]={q:it.q,got:false};else miss++;}
+    const go=()=>{const before=snap();if(isLoad)S.cart={};let miss=0;for(const it of tp.items){if(BYID.has(it.id))S.cart[it.id]={q:it.q,n:it.n||1,got:false};else miss++;}
       save();render(true);toast(miss?`Loaded. ${miss} custom item${miss>1?"s":""} no longer exist.`:"Loaded",()=>restore(before));};
     if(isLoad&&cartIds().length) return ask("Replace your current list with this trip?","Replace",go);
     return go();}
@@ -414,6 +419,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.pick){draft.ref=t.dataset.pick;draft.name=BYID.get(draft.ref).name;return renderAdd();}
   if(t.dataset.clearref){draft.ref=null;return renderAdd();}
   if(t.dataset.unpin){const before=snap();const id=t.dataset.unpin,f=BYID.get(id);if(f.custom){S.custom=S.custom.filter(c=>c.id!==id);delete S.cart[id];refresh();}else S.pins=S.pins.filter(x=>x!==id);expanded.delete(id);save();render(true);return toast("Removed from Your adds",()=>restore(before));}
+  if(t.dataset.b){const c=S.cart[t.dataset.b];c.n=Math.max(1,Math.min(20,(c.n||1)+ +t.dataset.d));save();return render(true);}
   if(t.dataset.q){const c=S.cart[t.dataset.q];c.q=Math.max(1,Math.min(6,(c.q||1)+ +t.dataset.d));save();return render(true);}
   if(t.dataset.rm){const before=snap();delete S.cart[t.dataset.rm];save();render(true);return toast("Removed from list",()=>restore(before));}
   if(t.id==="readd"){let n=0;for(const f of aisleItems(S.aisle)) if(S.last.includes(f.id)&&!inCart(f.id)){S.cart[f.id]={q:1,got:false};n++;} save();render(true);return toast(`Added ${n}`);}
@@ -434,6 +440,11 @@ $("q").value="";S.q="";
 document.addEventListener("submit",e=>{if(e.target.id!=="qaddf")return;e.preventDefault();
   const n=($("qa").value||"").trim();if(!n)return;const before=snap();const id="c"+Date.now().toString(36);
   S.custom.push({id,name:n,aisle:AISLES[S.aisle]});S.cart[id]={q:1,got:false};refresh();save();flashId=id;render(true);toast("Added to Your adds",()=>restore(before));});
+let drag=null;
+document.addEventListener("pointerdown",e=>{const h=e.target.closest&&e.target.closest("[data-drag]");if(!h)return;e.preventDefault();const li=h.closest("li");drag={i:+h.dataset.drag,li,to:null};li.classList.add("dragging");try{h.setPointerCapture(e.pointerId);}catch(x){}});
+document.addEventListener("pointermove",e=>{if(!drag)return;const lis=[...document.querySelectorAll("#main li")];let to=lis.findIndex(l=>e.clientY<l.getBoundingClientRect().top+l.getBoundingClientRect().height/2);if(to<0)to=lis.length-1;drag.to=to;lis.forEach((l,k)=>l.classList.toggle("dropat",k===to&&to!==drag.i));});
+function endDrag(){if(!drag)return;const d=drag;drag=null;document.querySelectorAll("#main li").forEach(l=>l.classList.remove("dropat","dragging"));if(d.to!=null&&d.to!==d.i){const o=AISLES.slice();const [x]=o.splice(d.i,1);o.splice(d.to,0,x);setOrder(o);}}
+document.addEventListener("pointerup",endDrag);document.addEventListener("pointercancel",()=>{drag=null;document.querySelectorAll("#main li").forEach(l=>l.classList.remove("dropat","dragging"));});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
 function netState(){$("offline").hidden=navigator.onLine!==false;}
 window.addEventListener("online",netState);window.addEventListener("offline",netState);netState();
