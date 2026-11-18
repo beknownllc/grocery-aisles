@@ -126,7 +126,7 @@ label{display:block;font-weight:700;font-size:.85rem;margin:12px 0 6px}
 .sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet[hidden]{display:none}
 .sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
-.sheet-card{position:relative;width:100%;max-width:560px;background:var(--surface);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.sheet-card{max-height:90dvh;overflow:auto;position:relative;width:100%;max-width:560px;background:var(--surface);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25)}
 .sheet-card h3{margin:0 0 4px;font-size:1.1rem}
 .sheet-card p{margin:6px 0 12px}
 .toast{display:flex;align-items:center;gap:12px}
@@ -139,6 +139,12 @@ body[data-v=cart] .pill.add,body[data-v=add] .pill.add{display:none}
 li.dragging{opacity:.55}
 li.dropat .food{outline:3px solid var(--accent)}
 .cartrow .qty .bl{font-weight:700;margin-right:8px;font-size:.85rem;min-width:0}
+.res{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-top:6px;min-height:44px}
+.res small{display:block;color:var(--muted);font-weight:500}
+.res .src{float:right;margin-left:8px;font-size:.7rem;font-weight:800;color:var(--accent);background:var(--soft);border-radius:999px;padding:1px 7px}
+.nl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nl label{margin:0 0 4px}.nl .full{grid-column:1/-1}
+#ne{margin-top:4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -187,16 +193,34 @@ AISLES=orderFor(); if(S.aisle<0||S.aisle>=AISLES.length) S.aisle=0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
 
 // foods: [id,name,aisle,fit,serving,protein,fiber,satfat]; custom: same shape with id "c1"...
+const SYN={yoghurt:"yogurt",mince:"ground",prawn:"shrimp",capsicum:"bell pepper",courgette:"zucchini",garbanzo:"chickpea",scallion:"onion",oatmeal:"oats",porridge:"oats",pb:"peanut butter",hamburger:"ground beef"};
+function stem(w){w=w.toLowerCase();if(w.length>4&&w.endsWith("ies"))return w.slice(0,-3)+"y";if(w.length>4&&/(ches|shes|xes|oes)$/.test(w))return w.slice(0,-2);if(w.length>3&&w.endsWith("s")&&!w.endsWith("ss"))return w.slice(0,-1);return w;}
+function tokz(str){return String(str).toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean).flatMap(w=>(SYN[w]||w).split(" ")).map(stem);}
+function matchFoods(q,pool){const qt=tokz(q);if(!qt.length)return [];
+  return pool.map(f=>{const ft=tokz(f.name);let sc=0;for(const t of qt){if(ft.includes(t))sc+=2;else if(t.length>=3&&ft.some(x=>x.startsWith(t)))sc+=1;else return null;}return {f,sc};}).filter(Boolean).sort((a,b)=>b.sc-a.sc).map(x=>x.f);}
+function estFit(n){
+  const kcal=+n.kcal||0,p=+n.p||0,fi=+n.fi||0,sf=+n.sf||0,na=+n.na||0,sug=+n.sug||0;
+  const pd=kcal>0?p/kcal*100:0; let sc=5;
+  sc+=pd>=15?2:pd>=10?1.5:pd>=7?1:pd>=4?.5:0;
+  sc+=fi>=4?1.5:fi>=2?1:fi>=1?.5:0;
+  sc+=sf>3?-2:sf>1.5?-1:sf<=.5?.5:0;
+  sc+=na>600?-2:na>400?-1.5:na>250?-1:na<100?.5:0;
+  sc+=sug>12?-1.5:sug>6?-.5:0;
+  sc+=kcal>350?-1:0;
+  return Math.max(0,Math.min(10,Math.round(sc)));
+}
 function allFoods(){
   const base=window.FOODS.map(f=>({id:String(f[0]),name:f[1],aisle:f[2],fit:f[3],serving:f[4],p:f[5],fi:f[6],sf:f[7],kcal:f[8],carb:f[9],sug:f[10],na:f[11],grade:f[12],pd:f[13]}));
-  const cu=S.custom.map(c=>({id:c.id,name:c.name,aisle:c.aisle,fit:null,serving:"",p:0,fi:0,sf:0,custom:true}));
+  const cu=S.custom.map(c=>{const n=c.nut;
+    if(!n) return {id:c.id,name:c.name,aisle:c.aisle,fit:null,serving:"",p:0,fi:0,sf:0,custom:true};
+    return {id:c.id,name:c.name,aisle:c.aisle,fit:estFit(n),est:true,serving:n.serving||"1 serving",p:n.p||0,fi:n.fi||0,sf:n.sf||0,kcal:n.kcal||0,carb:n.carb||0,sug:n.sug||0,na:n.na||0,grade:"",pd:n.kcal>0?+(n.p/n.kcal*100).toFixed(1):0,custom:true,nut:n};});
   return base.concat(cu);
 }
 let FOODS=allFoods(), BYID=new Map(FOODS.map(f=>[f.id,f]));
 function refresh(){FOODS=allFoods();BYID=new Map(FOODS.map(f=>[f.id,f]));}
 const inCart=id=>!!S.cart[id];
 const cartIds=()=>Object.keys(S.cart).filter(id=>BYID.has(id));
-const fitBadge=f=>f==null?"":`<span class="fit f${f}" title="Fit score ${f} out of 10" aria-label="Fit score ${f} out of 10">Fit ${f}</span>`;
+const fitBadge=(f,est)=>f==null?"":`<span class="fit f${f}" title="${est?"Estimated fit score":"Fit score"} ${f} out of 10" aria-label="${est?"Estimated fit score":"Fit score"} ${f} out of 10">Fit ${est?"~":""}${f}</span>`;
 
 let toastT=null;
 function toast(msg,undo){
@@ -284,21 +308,29 @@ function storeCtl(f){
   const chk=dfltNo(f)&&!availList().includes(f.id)?`<div class="dnote">Not found at ${esc(S.store)} when checked. Tap below if you see it there.</div>`:"";
   return `<div class="storectl">${chk}<button class="btn ghost" data-unav="${f.id}">${isHidden(f)?"Mark as sold at "+esc(S.store):"Not sold at "+esc(S.store)}</button><label for="pk${f.id}">Pack size at ${esc(S.store)}</label><input id="pk${f.id}" data-pack="${f.id}" value="${esc(packOf(f))}" placeholder="Example: 3 lb tray" maxlength="30"></div>`;
 }
+const subOf=f=>f.custom&&!f.nut?"Added by you":esc(f.serving);
 const pinCtl=f=>isPinned(f)?`<button class="btn ghost" data-unpin="${f.id}" style="margin-top:8px">Remove from Your adds</button>`:"";
 function recipesHtml(f){const r=(window.RECIPES||{})[f.id];if(!r)return "";
   const q=encodeURIComponent(f.name.split(",")[0]+" healthy high protein recipe");
   return `<div class="recipes"><b style="font-size:.85rem">Recipe ideas</b>${r.map(([t,m])=>`<div class="recipe"><b>${esc(t)}</b>${esc(m)}</div>`).join("")}<a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">More recipes &rarr;</a></div>`;}
+function customDetail(f){
+  const cell=(l,v)=>`<div>${l}<b>${v}</b></div>`;
+  const q=encodeURIComponent(f.name+" healthy high protein recipe");
+  const nutBlock=f.nut?`<div class="dgrid" style="margin-top:10px">${cell("Calories",f.kcal)}${cell("Protein",f.p+" g")}${cell("Carbs",f.carb+" g")}${cell("Fiber",f.fi+" g")}${cell("Sugar",f.sug+" g")}${cell("Sat fat",f.sf+" g")}${cell("Sodium",f.na+" mg")}${cell("Fit (est.)","~"+f.fit+"/10")}</div><div class="dnote">Per ${esc(f.serving)}. Source: ${esc(f.nut.src||"you")}. The fit score is an estimate.</div><button class="btn ghost" data-nedit="${f.id}" style="margin-top:8px">Edit nutrition</button>`
+    :`<div class="dnote">No nutrition yet.</div><button class="btn" data-nedit="${f.id}" style="margin-top:8px">Look up nutrition</button>`;
+  return `<div class="detail"><label for="rn${f.id}" style="margin-top:0">Name</label><input id="rn${f.id}" data-rename="${f.id}" value="${esc(f.name)}" maxlength="60">${nutBlock}<div class="recipes"><a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Find recipes &rarr;</a></div>${storeCtl(f)}${pinCtl(f)}</div>`;
+}
 function detail(f){
-  if(f.custom) return `<div class="detail"><label for="rn${f.id}">Name</label><input id="rn${f.id}" data-rename="${f.id}" value="${esc(f.name)}" maxlength="60"><div class="dnote">Not in the guide, so no nutrition facts.</div>${storeCtl(f)}${pinCtl(f)}</div>`;
+  if(f.custom) return customDetail(f);
   const cell=(l,v)=>`<div>${l}<b>${v}</b></div>`;
   return `<div class="detail"><div class="dgrid">${cell("Calories",f.kcal)}${cell("Protein",f.p+" g")}${cell("Carbs",f.carb+" g")}${cell("Fiber",f.fi+" g")}${cell("Sugar",f.sug+" g")}${cell("Sat fat",f.sf+" g")}${cell("Sodium",f.na+" mg")}${cell("Nutri-Score",f.grade)}${cell("Fit score",f.fit+"/10")}</div><div class="dnote">Per ${esc(f.serving)}. ${f.pd} g protein per 100 kcal.</div>${recipesHtml(f)}${storeCtl(f)}${pinCtl(f)}</div>`;
 }
 function foodBtn(f){
   const sel=inCart(f.id), got=sel&&S.cart[f.id].got, ex=expanded.has(f.id);
   const last=S.last.includes(f.id)&&!sel&&S.mode==="plan"?`<span class="tag">last trip</span>`:"";
-  const meta=f.custom?"Added by you":`${esc(f.serving)} · ${f.p} g protein`;
+  const meta=f.custom&&!f.nut?"Added by you":`${esc(f.serving)} · ${f.p} g protein`;
   const hid=isHidden(f)?`<span class="tag">not sold here</span>`:"", pk=packOf(f)?`<span class="tag">${esc(packOf(f))}</span>`:"";
-  return `<li><div class="food ${sel?"sel":""} ${got?"got":""}"><button class="tick" data-id="${f.id}" aria-pressed="${sel}" aria-label="${sel?"Remove":"Add"} ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><button class="body" data-exp="${f.id}" aria-expanded="${ex}"><span class="nm">${esc(f.name)}${last}${pk}${hid}<small>${meta}</small></span>${fitBadge(f.fit)}<svg class="chev" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>${ex?detail(f):""}</li>`;
+  return `<li><div class="food ${sel?"sel":""} ${got?"got":""}"><button class="tick" data-id="${f.id}" aria-pressed="${sel}" aria-label="${sel?"Remove":"Add"} ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><button class="body" data-exp="${f.id}" aria-expanded="${ex}"><span class="nm">${esc(f.name)}${last}${pk}${hid}<small>${meta}</small></span>${fitBadge(f.fit,f.est)}<svg class="chev" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>${ex?detail(f):""}</li>`;
 }
 
 let noteOpen=false;
@@ -330,9 +362,9 @@ function renderAisle(){
 
 function renderSearch(){
   const q=S.q.trim().toLowerCase();
-  const all=FOODS.filter(f=>f.name.toLowerCase().includes(q)).filter(visible).sort(bySort);const res=all.slice(0,40);
+  let all=FOODS.filter(f=>f.name.toLowerCase().includes(q)).filter(visible).sort(bySort);if(!all.length)all=matchFoods(q,FOODS).filter(visible);const res=all.slice(0,40);
   let h=`<h2>Search</h2><p class="sub">${res.length} match${res.length===1?"":"es"} for “${esc(S.q.trim())}”. Tap a food to jump to its aisle.${all.length>40?" Showing the first 40, so keep typing to narrow it down.":""}</p><ul>`+
-    res.map(f=>`<li><button class="food jump" data-jump="${f.id}"><span class="box" aria-hidden="true"></span><span class="nm">${esc(f.name)}<small><b class="al">${esc(f.aisle)}</b>${f.serving?" · "+esc(f.serving):""}</small></span>${fitBadge(f.fit)}</button></li>`).join("")+`</ul>`;
+    res.map(f=>`<li><button class="food jump" data-jump="${f.id}"><span class="box" aria-hidden="true"></span><span class="nm">${esc(f.name)}<small><b class="al">${esc(f.aisle)}</b>${f.serving?" · "+esc(f.serving):""}</small></span>${fitBadge(f.fit,f.est)}</button></li>`).join("")+`</ul>`;
   h+=`<button class="btn" data-custom="1">Not in the guide? Add “${esc(S.q.trim())}”</button>`;
   $("main").innerHTML=h;
   $("nav").innerHTML=`<button class="btn" id="clearq">Clear search</button>`;
@@ -349,21 +381,111 @@ function renderCart(){
     const its=ids.map(id=>BYID.get(id)).filter(f=>f.aisle===a).sort((x,y)=>(!!S.cart[x.id].got)-(!!S.cart[y.id].got));
     if(!its.length) continue;
     h+=`<div class="card"><b>${esc(a)}</b>`+its.map(f=>{const g=!!S.cart[f.id].got;
-      return `<div class="cartrow ${g?"got":""}"><button class="tick" data-got="${f.id}" aria-pressed="${g}" aria-label="Check off ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><span class="nm"><span class="t">${esc(f.name)}</span>${packOf(f)?`<span class="tag">${esc(packOf(f))}</span>`:""}${isHidden(f)?`<span class="tag">not sold at ${esc(S.store)}</span>`:""}<small>${f.custom?"Added by you":esc(f.serving)}</small><span class="qty"><span class="bl">Buy</span><button data-b="${f.id}" data-d="-1" aria-label="Buy fewer ${esc(f.name)}">−</button><span>${S.cart[f.id].n||1}</span><button data-b="${f.id}" data-d="1" aria-label="Buy more ${esc(f.name)}">+</button></span></span><button class="btn ghost x" data-rm="${f.id}" aria-label="Remove ${esc(f.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`;}).join("")+`</div>`;
+      return `<div class="cartrow ${g?"got":""}"><button class="tick" data-got="${f.id}" aria-pressed="${g}" aria-label="Check off ${esc(f.name)}"><span class="box" aria-hidden="true"></span></button><span class="nm"><span class="t">${esc(f.name)}</span>${packOf(f)?`<span class="tag">${esc(packOf(f))}</span>`:""}${isHidden(f)?`<span class="tag">not sold at ${esc(S.store)}</span>`:""}<small>${subOf(f)}</small><span class="qty"><span class="bl">Buy</span><button data-b="${f.id}" data-d="-1" aria-label="Buy fewer ${esc(f.name)}">−</button><span>${S.cart[f.id].n||1}</span><button data-b="${f.id}" data-d="1" aria-label="Buy more ${esc(f.name)}">+</button></span></span><button class="btn ghost x" data-rm="${f.id}" aria-label="Remove ${esc(f.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`;}).join("")+`</div>`;
   }
   if(ids.length) h+=`<div class="row" style="margin:6px 0"><button class="btn" id="copyList" style="flex:1">Share / copy list</button>${got?`<button class="btn ghost" id="uncheck">Uncheck all</button>`:""}</div>`;
   let w="";
   if(ids.length>=8&&t.p<lo) w+=`<div class="warn">Your picks cover about ${t.p} g protein a day. Add proteins or raise servings to reach ${lo} g.</div>`;
   if(ids.length>=8&&t.snacks<SNACK_MIN) w+=`<div class="warn">No snacks on your list. Add at least ${SNACK_MIN} so you don't run out.</div>`;
-  h+=`<details class="card"><summary>Daily targets</summary><div class="tally"><div><b>~${t.p} g</b>protein / day<div class="bar-track"><i style="width:${pPct}%"></i></div><small>Weekday target ${lo}-${hi} g</small></div><div><b>~${t.fi} g</b>fiber / day<div class="bar-track"><i style="width:${fPct}%"></i></div><small>Target ${FIBER_TARGET} g+</small></div></div>${w}${ids.length?`<div style="margin-top:10px"><b style="font-size:.85rem">Servings per day</b>`+ids.map(id=>BYID.get(id)).map(f=>`<div class="cartrow" style="align-items:center"><span class="nm">${esc(f.name)}<small>${f.custom?"Added by you":esc(f.serving)}</small></span><span class="qty"><button data-q="${f.id}" data-d="-1" aria-label="Fewer servings of ${esc(f.name)}">−</button><span>${S.cart[f.id].q||1}×</span><button data-q="${f.id}" data-d="1" aria-label="More servings of ${esc(f.name)}">+</button></span></div>`).join("")+`</div>`:""}</details>`;
+  h+=`<details class="card"><summary>Daily targets</summary><div class="tally"><div><b>~${t.p} g</b>protein / day<div class="bar-track"><i style="width:${pPct}%"></i></div><small>Weekday target ${lo}-${hi} g</small></div><div><b>~${t.fi} g</b>fiber / day<div class="bar-track"><i style="width:${fPct}%"></i></div><small>Target ${FIBER_TARGET} g+</small></div></div>${w}${ids.length?`<div style="margin-top:10px"><b style="font-size:.85rem">Servings per day</b>`+ids.map(id=>BYID.get(id)).map(f=>`<div class="cartrow" style="align-items:center"><span class="nm">${esc(f.name)}<small>${subOf(f)}</small></span><span class="qty"><button data-q="${f.id}" data-d="-1" aria-label="Fewer servings of ${esc(f.name)}">−</button><span>${S.cart[f.id].q||1}×</span><button data-q="${f.id}" data-d="1" aria-label="More servings of ${esc(f.name)}">+</button></span></div>`).join("")+`</div>`:""}</details>`;
   h+=`<div class="card"><b>Saved trips</b>`+(S.templates.length?S.templates.map(t=>`<div class="cartrow" style="align-items:center"><span class="nm">${esc(t.name)}<small>${t.items.length} items</small></span><button class="btn" data-tload="${t.id}">Load</button><button class="btn ghost" data-tadd="${t.id}">Add</button><button class="btn ghost x" data-tdel="${t.id}" aria-label="Delete ${esc(t.name)}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`).join(""):`<p class="sub" style="margin:8px 0">Save this list, like "heavy lift week", to reload it later.</p>`)+
     `<label for="tname">Name this list</label><div class="row"><input id="tname" placeholder="Heavy lift week" style="flex:1"><button class="btn primary" id="tsave" ${ids.length?"":"disabled"}>Save</button></div></div>`;
   $("main").innerHTML=h;
   $("nav").innerHTML=`<button class="btn" data-view="aisle">Back to aisles</button><button class="btn primary" id="finish" ${ids.length?"":"disabled"}>Done shopping</button>`;
 }
 
+/* ---------- nutrition lookup (USDA FoodData Central + Open Food Facts) ---------- */
+const LKKEY="aisle-walk-lk";
+function lkCache(){try{return JSON.parse(localStorage.getItem(LKKEY)||"{}");}catch(e){return {};}}
+function lkStore(q,items){try{const c=lkCache();c[q]={t:Date.now(),items};const ks=Object.keys(c).sort((a,b)=>c[b].t-c[a].t).slice(0,30);const o={};ks.forEach(k=>o[k]=c[k]);localStorage.setItem(LKKEY,JSON.stringify(o));}catch(e){}}
+const r1=v=>Math.round((+v||0)*10)/10;
+function usdaParse(food){
+  const m={};(food.foodNutrients||[]).forEach(n=>{const k=String(n.nutrientNumber||n.nutrientId);m[k]=n.value;});
+  const kcal=m["208"]!=null?m["208"]:(m["957"]!=null?m["957"]:m["958"]);
+  if(kcal==null) return null;
+  let f=1,serving="100 g";
+  if(food.dataType==="Branded"&&food.servingSize>0&&/^(g|ml)$/i.test(food.servingSizeUnit||"")){f=food.servingSize/100;serving=(food.householdServingFullText?food.householdServingFullText+" (":"")+r1(food.servingSize)+" "+String(food.servingSizeUnit).toLowerCase()+(food.householdServingFullText?")":"");}
+  else{const ms=(food.foodMeasures||[]).filter(x=>x.gramWeight>0&&!/quantity not specified|mini|^1 oz|^1 cup$|^1 tablespoon|^1 teaspoon/i.test(x.disseminationText||x.measureUnitName||"")).sort((a,b)=>(a.rank||99)-(b.rank||99));
+    if(ms.length){f=ms[0].gramWeight/100;serving=(ms[0].disseminationText||"1 serving")+" ("+Math.round(ms[0].gramWeight)+" g)";}}
+  const v=k=>(+m[k]||0)*f;
+  return {name:(food.description||"").replace(/\s+/g," ").trim(),brand:food.brandName||food.brandOwner||"",src:"USDA",nut:{serving,kcal:Math.round(kcal*f),p:r1(v("203")),fi:r1(v("291")),sf:r1(v("606")),carb:r1(v("205")),sug:r1(v("269")),na:Math.round(v("307"))}};
+}
+function offParse(p){
+  const n=p.nutriments||{}; const hasServ=n["energy-kcal_serving"]!=null&&p.serving_size;
+  const sfx=hasServ?"_serving":"_100g"; const g=k=>+n[k+sfx]||0;
+  if(n["energy-kcal"+sfx]==null) return null;
+  return {name:p.product_name,brand:p.brands||"",src:"Packaged",nut:{serving:hasServ?p.serving_size:"100 g",kcal:Math.round(g("energy-kcal")),p:r1(g("proteins")),fi:r1(g("fiber")),sf:r1(g("saturated-fat")),carb:r1(g("carbohydrates")),sug:r1(g("sugars")),na:Math.round(g("sodium")*1000)}};
+}
+function fetchJson(url){const ac=typeof AbortController!=="undefined"?new AbortController():null;const t=setTimeout(()=>ac&&ac.abort(),9000);
+  return fetch(url,ac?{signal:ac.signal}:{}).then(r=>{clearTimeout(t);if(!r.ok){const e=new Error("http "+r.status);e.status=r.status;throw e;}return r.json();},e=>{clearTimeout(t);throw e;});}
+async function lookupFoods(q){
+  const key=q.toLowerCase().trim(),c=lkCache();
+  if(c[key]) return {items:c[key].items,err:""};
+  const enc=encodeURIComponent(q);
+  const usda=fetchJson("https://api.nal.usda.gov/fdc/v1/foods/search?query="+enc+"&pageSize=15&api_key="+encodeURIComponent((S.usdaKey||"DEMO_KEY").trim()));
+  const off=fetchJson("https://world.openfoodfacts.org/cgi/search.pl?search_terms="+enc+"&search_simple=1&action=process&json=1&page_size=10&fields=product_name,brands,serving_size,nutriments");
+  const [u,o]=await Promise.allSettled([usda,off]);
+  let items=[],err="";
+  if(u.status==="fulfilled"){const rank={"Survey (FNDDS)":0,"SR Legacy":1,"Foundation":2,"Branded":3};
+    const fs=(u.value.foods||[]).slice().sort((a,b)=>(rank[a.dataType]??4)-(rank[b.dataType]??4));
+    const gen=fs.filter(f=>f.dataType!=="Branded").slice(0,4),br=fs.filter(f=>f.dataType==="Branded").slice(0,2);
+    items=items.concat(gen.concat(br).map(usdaParse).filter(Boolean));}
+  else if(u.reason&&u.reason.status===429) err="USDA lookup limit reached. Add your own free key in Lookup settings.";
+  if(o.status==="fulfilled"){items=items.concat((o.value.products||[]).filter(p=>p.product_name).map(offParse).filter(Boolean).slice(0,3));}
+  if(!items.length&&u.status==="rejected"&&o.status==="rejected") err=err||"Couldn't reach the nutrition databases. Check your connection, or enter the label.";
+  if(items.length) lkStore(key,items);
+  return {items,err};
+}
+const newNE=sheet=>({q:"",nut:null,res:[],st:"idle",err:"",id:null,sheet:!!sheet,open:false});
+let NE=newNE(false),neT=null;
+const nutOk=n=>n&&((+n.kcal>0)||(+n.p>0));
+function cleanNut(n){return {serving:(n.serving||"1 serving").toString().slice(0,40),kcal:Math.round(+n.kcal||0),p:r1(n.p),fi:r1(n.fi),sf:r1(n.sf),carb:r1(n.carb),sug:r1(n.sug),na:Math.round(+n.na||0),src:n.src||"entered from label"};}
+function sumHtml(){
+  if(!NE.nut) return "";
+  const n=NE.nut;
+  return `<div class="card" style="margin:8px 0"><b>Nutrition: ${esc(n.src||"entered from label")}</b><div class="sub" style="margin:4px 0 0">${esc(n.serving||"1 serving")} · ${n.kcal||0} cal · ${n.p||0} g protein · ${n.fi||0} g fiber · est. fit ~${estFit(n)}/10</div><button class="btn ghost" data-nclear="1" style="margin-top:8px">Change</button></div>`;
+}
+function resHtml(){
+  if(NE.nut) return "";
+  const q=NE.q.trim();
+  let h="";
+  if(NE.st==="loading") h+=`<div class="sub" style="margin:8px 0">Looking up nutrition...</div>`;
+  else if(NE.st==="done"){
+    if(NE.res.length) h+=`<div class="sub" style="margin:8px 0 0">Tap the closest match to add nutrition facts:</div>`+NE.res.map((r,i)=>`<button class="res" data-nres="${i}"><span class="src">${esc(r.src)}</span><b>${esc(r.name)}</b>${r.brand?` <small style="display:inline">${esc(r.brand)}</small>`:""}<small>${esc(r.nut.serving)} · ${r.nut.kcal} cal · ${r.nut.p} g protein</small></button>`).join("");
+    else h+=`<div class="sub" style="margin:8px 0">${esc(NE.err||"No matches. Try different words, or enter the label below.")}</div>`;
+    if(NE.res.length&&NE.err) h+=`<div class="sub" style="margin:6px 0 0">${esc(NE.err)}</div>`;
+  }
+  if(NE.st!=="loading"&&q.length>=3) h+=`<button class="btn" data-nlook="1" style="margin-top:8px">${NE.st==="done"?"Search again":"Look up nutrition"}</button>`;
+  h+=` <button class="chip" data-lkset="1" style="margin-top:8px;min-height:44px">Lookup settings</button>`;
+  return h;
+}
+function labelHtml(){
+  const n=NE.nut||{};const v=k=>n[k]!=null&&n[k]!==0?n[k]:"";
+  const f=(k,l,ph)=>`<div><label for="nl-${k}">${l}</label><input id="nl-${k}" data-nl="${k}" inputmode="decimal" value="${esc(v(k))}" placeholder="${ph||"0"}"></div>`;
+  return `<details class="card" id="nlab" ${NE.open?"open":""} style="margin:8px 0"><summary>Enter from the label</summary><div class="nl"><div class="full"><label for="nl-serving">Serving</label><input id="nl-serving" data-nl="serving" value="${esc(n.serving||"")}" placeholder="1 roll (64 g)"></div>${f("kcal","Calories")}${f("p","Protein (g)")}${f("fi","Fiber (g)")}${f("sf","Sat fat (g)")}${f("carb","Carbs (g)")}${f("sug","Sugar (g)")}${f("na","Sodium (mg)")}</div></details>`;
+}
+function neInner(){return `<div id="nsum">${sumHtml()}</div><div id="nres">${resHtml()}</div>${labelHtml()}`;}
+function neRefresh(){const e=$("ne");if(e)e.innerHTML=neInner();}
+function neRes(){const e=$("nres");if(e)e.innerHTML=resHtml();}
+function neSum(){const e=$("nsum");if(e)e.innerHTML=sumHtml();const r=$("nres");if(r)r.innerHTML=resHtml();}
+async function neLookup(){
+  const q=NE.q.trim(); if(q.length<3||NE.nut) return;
+  NE.st="loading";NE.err="";neRes();
+  let r; try{r=await lookupFoods(q);}catch(e){r={items:[],err:"Lookup failed. Enter the label instead."};}
+  if(NE.q.trim()!==q) return;
+  NE.res=r.items;NE.err=r.err;NE.st="done";neRes();
+}
+function neSchedule(){clearTimeout(neT);neT=setTimeout(()=>{if(NE.nut||NE.q.trim().length<4)return;if(!NE.sheet&&draft.ref==null&&matchFoods(NE.q,FOODS.filter(f=>!f.custom)).length)return;neLookup();},1000);}
+function openNut(id){
+  const c=S.custom.find(x=>x.id===id); if(!c) return;
+  NE=newNE(true);NE.q=c.name;NE.id=id;NE.nut=c.nut?{...c.nut}:null;NE.open=!!c.nut;
+  openSheet(`<h3>Nutrition: ${esc(c.name)}</h3><label for="sq">Search for</label><input id="sq" value="${esc(c.name)}" autocomplete="off"><div id="ne">${neInner()}</div><div class="row" style="margin-top:12px"><button class="btn" style="flex:1" data-close>Cancel</button><button class="btn primary" style="flex:1" id="nsave">Save</button></div>`);
+  if(!c.nut) neLookup();
+}
+function lkSettings(){openSheet(`<h3>Lookup settings</h3><p class="sub">Nutrition lookups use the free USDA FoodData Central and Open Food Facts databases. The built-in USDA key is shared and has a low limit. A personal key is free and much higher.</p><label for="usdakey">USDA API key</label><input id="usdakey" value="${esc(S.usdaKey||"")}" placeholder="DEMO_KEY (shared)" autocomplete="off" autocapitalize="off"><p class="sub" style="margin-top:8px">Get one at fdc.nal.usda.gov/api-key-signup</p><div class="row"><button class="btn" style="flex:1" data-close>Cancel</button><button class="btn primary" style="flex:1" id="savekey">Save</button></div>`);}
+
 let draft={name:"",aisle:"",ref:null};
-const KW=[["Frozen","frozen|ice cream|pizza|popsicle|waffle|ice"],
+const KW=[["Frozen","frozen|egg roll|spring roll|dumpling|potsticker|pot sticker|taquito|pierogi|lasagna|tater tot|french fries|fries|ice cream|pizza|popsicle|waffle|ice"],
 ["Pantry","peanut butter|almond butter|broth|stock|soup|canned|sauce|dressing|cream of"],
 ["Snacks","chips|crisps|popcorn|pretzel"],
 [HH,"toilet paper|paper towel|tissue|napkin|soap|detergent|trash bag|garbage bag|sponge|shampoo|conditioner|toothpaste|toothbrush|deodorant|cleaner|bleach|foil|plastic wrap|ziploc|zip bag|battery|batteries|light bulb|diaper|wipes|razor|floss|lotion|sunscreen|vitamin|bandage|candle|laundry|dryer sheet|dishwasher|mouthwash|cotton|pet food|dog food|cat food|litter"],
@@ -377,17 +499,16 @@ const KW=[["Frozen","frozen|ice cream|pizza|popsicle|waffle|ice"],
 function guessAisle(name){
   const q=(name||"").toLowerCase().trim(); if(q.length<2) return null;
   for(const [a,re] of KW){ if(AISLES.includes(a) && new RegExp("(^|[^a-z])("+re+")s?($|[^a-z])").test(q)) return a; }
-  const toks=q.split(/\s+/);
-  const m=window.FOODS.filter(f=>toks.every(t=>f[1].toLowerCase().includes(t)));
-  if(m.length){const c={};m.forEach(f=>c[f[2]]=(c[f[2]]||0)+1);return Object.keys(c).sort((x,y)=>c[y]-c[x])[0];}
+  const m=matchFoods(q,FOODS.filter(f=>!f.custom));
+  if(m.length){const c={};m.forEach(f=>c[f.aisle]=(c[f.aisle]||0)+1);return Object.keys(c).sort((x,y)=>c[y]-c[x])[0];}
   return null;
 }
-function openAdd(name){draft={name:name||"",aisle:guessAisle(name)||AISLES[S.aisle]||AISLES[0],ref:null};S.q="";$("q").value="";S.view="add";save();render();window.scrollTo(0,0);}
+function openAdd(name){draft={name:name||"",aisle:guessAisle(name)||AISLES[S.aisle]||AISLES[0],ref:null};NE=newNE(false);NE.q=name||"";neSchedule();S.q="";$("q").value="";S.view="add";save();render();window.scrollTo(0,0);}
 function matchHtml(){
   if(draft.ref!=null){const f=BYID.get(draft.ref);return `<div class="card" style="margin:8px 0"><b>Nutrition from the guide</b><div class="sub" style="margin:4px 0 0">${esc(f.name)} · ${esc(f.serving)} · ${f.p} g protein · fit ${f.fit}/10</div><button class="btn ghost" data-clearref="1" style="margin-top:8px">Use a different food</button></div>`;}
   const q=draft.name.trim().toLowerCase(); if(q.length<2) return "";
   const toks=q.split(/\s+/);
-  const ms=window.FOODS.map(f=>BYID.get(String(f[0]))).filter(f=>toks.every(t=>f.name.toLowerCase().includes(t))).slice(0,6);
+  const ms=matchFoods(draft.name,FOODS.filter(f=>!f.custom)).slice(0,6);
   const mine=S.custom.filter(c=>toks.every(t=>c.name.toLowerCase().includes(t))&&c.name.toLowerCase()!==q).slice(0,3);
   const mh=mine.length?`<div class="sub" style="margin:8px 0 0">Your earlier adds:</div>`+mine.map(c=>`<button class="match" data-quick="${esc(c.name)}" data-qaisle="${esc(c.aisle)}"><b>${esc(c.name)}</b><small>${esc(c.aisle)}</small></button>`).join(""):"";
   return mh+(ms.length?`<div class="sub" style="margin:8px 0 0">Tap one to use its nutrition facts:</div>`+ms.map(f=>`<button class="match" data-pick="${f.id}"><b>${esc(f.name)}</b><small>${esc(f.aisle)} · ${esc(f.serving)} · ${f.p} g protein</small></button>`).join(""):"");
@@ -396,14 +517,14 @@ const COMMON=["Toilet paper","Paper towels","Dish soap","Trash bags","Laundry de
 function renderAdd(){
   const recent=[...new Set(S.custom.slice().reverse().map(c=>c.name))].slice(0,5).filter(n=>!COMMON.includes(n));
   const quick=COMMON.map(n=>[n,HH]).concat(recent.map(n=>[n,(S.custom.find(c=>c.name===n)||{}).aisle||HH]));
-  $("main").innerHTML=`<p class="sub">Pick a food from the guide to get nutrition facts, or type anything else and choose an aisle.</p><label for="an">What do you need?</label><input id="an" value="${esc(draft.name)}" autocomplete="off" placeholder="Flank steak, toilet paper..."><div id="am">${matchHtml()}</div><label for="aa">Aisle</label><select id="aa" ${draft.ref!=null?"disabled":""}>${AISLES.map(a=>`<option ${a===(draft.ref!=null?BYID.get(draft.ref).aisle:draft.aisle)?"selected":""}>${esc(a)}</option>`).join("")}</select><div class="sub" id="ah" style="margin:6px 0 0"></div><label>Quick picks</label><div class="chips">${quick.map(([n,ai])=>`<button class="chip" data-quick="${esc(n)}" data-qaisle="${esc(ai)}">${esc(n)}</button>`).join("")}</div>`;
+  $("main").innerHTML=`<p class="sub">Pick a food from the guide to get nutrition facts, or type anything else and choose an aisle.</p><label for="an">What do you need?</label><input id="an" value="${esc(draft.name)}" autocomplete="off" placeholder="Flank steak, toilet paper..."><div id="am">${matchHtml()}</div><label for="aa">Aisle</label><select id="aa" ${draft.ref!=null?"disabled":""}>${AISLES.map(a=>`<option ${a===(draft.ref!=null?BYID.get(draft.ref).aisle:draft.aisle)?"selected":""}>${esc(a)}</option>`).join("")}</select><div class="sub" id="ah" style="margin:6px 0 0"></div><div id="nwrap" ${draft.ref!=null?"hidden":""}><label>Nutrition (optional)</label><div id="ne">${neInner()}</div></div><label>Quick picks</label><div class="chips">${quick.map(([n,ai])=>`<button class="chip" data-quick="${esc(n)}" data-qaisle="${esc(ai)}">${esc(n)}</button>`).join("")}</div>`;
   $("nav").innerHTML=`<button class="btn" data-view="aisle">Cancel</button><button class="btn primary" id="savea">Add to list</button>`;
 }
 function saveAdd(){
   const n=($("an").value||"").trim(); if(!n&&draft.ref==null) return toast("Type what you need");
   const before=snap(); let aisle,newId;
   if(draft.ref!=null){const f=BYID.get(draft.ref);if(!S.pins.includes(f.id))S.pins.push(f.id);S.cart[f.id]=S.cart[f.id]||{q:1,got:false};aisle=f.aisle;newId=f.id;}
-  else{aisle=$("aa").value;const id="c"+Date.now().toString(36);S.custom.push({id,name:n,aisle});S.cart[id]={q:1,got:false};newId=id;}
+  else{aisle=$("aa").value;const id="c"+Date.now().toString(36);S.custom.push({id,name:n,aisle,nut:nutOk(NE.nut)?cleanNut(NE.nut):undefined});S.cart[id]={q:1,got:false};newId=id;}
   refresh();S.aisle=Math.max(0,AISLES.indexOf(aisle));S.view="aisle";S.mode="plan";save();flashId=newId;render();window.scrollTo(0,0);flashRow();toast("Added to Your adds",()=>restore(before));
 }
 
@@ -415,12 +536,19 @@ document.addEventListener("click",e=>{
   if(t.id==="askok"){const f=askFn;askFn=null;closeSheet();return f&&f();}
   if(t.id==="storeBtn") return storeMenu();
   if(t.dataset.setstore){const cur=AISLES[S.aisle];S.store=t.dataset.setstore;AISLES=orderFor();S.aisle=Math.max(0,AISLES.indexOf(cur));S.view="aisle";save();closeSheet();render();return window.scrollTo(0,0);}
+  if(t.dataset.nres!==undefined){const r=NE.res[+t.dataset.nres];if(r){NE.nut={...r.nut,src:r.src+": "+r.name};NE.open=true;neRefresh();}return;}
+  if(t.dataset.nclear){NE.nut=null;NE.open=false;neRefresh();if(NE.q.trim().length>=3&&!NE.res.length)neSchedule();return;}
+  if(t.dataset.nlook){NE.st="idle";return neLookup();}
+  if(t.dataset.nedit) return openNut(t.dataset.nedit);
+  if(t.dataset.lkset) return lkSettings();
+  if(t.id==="savekey"){S.usdaKey=($("usdakey").value||"").trim();save();closeSheet();return toast("Saved");}
+  if(t.id==="nsave"){if(!nutOk(NE.nut))return toast("Add calories or protein first");const c=S.custom.find(x=>x.id===NE.id);if(c){const before=snap();c.nut=cleanNut(NE.nut);refresh();save();closeSheet();render(true);toast("Nutrition saved",()=>restore(before));}return;}
   if(t.dataset.hint){S.hint=true;save();return render(true);}
   if(t.dataset.note){noteOpen=!noteOpen;return render(true);}
   if(t.dataset.clearf){S.filters=[];save();return render(true);}
   if(t.dataset.got){const c=S.cart[t.dataset.got];if(c)c.got=!c.got;save();return render(true);}
   if(t.id==="uncheck"){for(const id in S.cart)S.cart[id].got=false;save();return render(true);}
-  if(t.dataset.quick){draft={name:t.dataset.quick,aisle:t.dataset.qaisle||HH,ref:null};return renderAdd();}
+  if(t.dataset.quick){draft={name:t.dataset.quick,aisle:t.dataset.qaisle||HH,ref:null};NE=newNE(false);NE.q=draft.name;const pc=S.custom.find(c=>c.name===draft.name&&c.nut);if(pc){NE.nut={...pc.nut};NE.open=true;}else neSchedule();return renderAdd();}
   if(t.id==="copyList"){const txt=listText();
     if(navigator.share){navigator.share({text:txt}).catch(()=>{});return;}
     const done=()=>toast("List copied");
@@ -472,7 +600,15 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{const rn=e.target.closest&&e.target.closest("[data-rename]");if(rn){const c=S.custom.find(x=>x.id===rn.dataset.rename);const v=rn.value.trim();if(c&&v){c.name=v;refresh();save();render(true);}return;}const i=e.target.closest&&e.target.closest("[data-pack]");if(!i)return;const m=S.pack[S.store]||(S.pack[S.store]={});const v=i.value.trim();if(v)m[i.dataset.pack]=v;else delete m[i.dataset.pack];save();render(true);});
 $("q").addEventListener("input",e=>{S.q=e.target.value;render();});
-document.addEventListener("input",e=>{if(e.target.id==="an"){draft.name=e.target.value;draft.ref=null;$("am").innerHTML=matchHtml();$("aa").disabled=false;
+document.addEventListener("input",e=>{
+  const nl=e.target.closest&&e.target.closest("[data-nl]");
+  if(nl){const k=nl.dataset.nl;if(!NE.nut)NE.nut={serving:"",src:"entered from label"};
+    NE.nut[k]=k==="serving"?nl.value:(parseFloat(String(nl.value).replace(",","."))||0);
+    if(!/edited|entered/.test(NE.nut.src||""))NE.nut.src+=" (edited)";
+    const sm=$("nsum");if(sm)sm.innerHTML=sumHtml();const rs=$("nres");if(rs)rs.innerHTML="";return;}
+  if(e.target.id==="sq"){NE.q=e.target.value;if(NE.st!=="idle"&&!NE.nut){NE.st="idle";NE.res=[];}neRes();neSchedule();return;}
+  if(e.target.id==="an"){NE.q=e.target.value;if(!NE.nut){NE.st="idle";NE.res=[];NE.err="";}neRes();neSchedule();const nw=$("nwrap");if(nw)nw.hidden=false;
+  draft.name=e.target.value;draft.ref=null;$("am").innerHTML=matchHtml();$("aa").disabled=false;
   if(!draft.touched){const g=guessAisle(draft.name);if(g){draft.aisle=g;$("aa").value=g;$("ah").textContent="Aisle picked for you. Change it if it's wrong.";}else $("ah").textContent="";}}});
 document.addEventListener("change",e=>{if(e.target.id==="aa"){draft.touched=true;draft.aisle=e.target.value;$("ah").textContent="";}});
 $("q").value="";S.q="";

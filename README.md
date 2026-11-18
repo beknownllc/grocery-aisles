@@ -10,3 +10,6 @@ Per-store availability lives in `stores.js`. The + button adds your own items: p
 - The shopping list (cart screen) is also the in-store checklist: tap the box to check off, Done shopping clears it and tags last trip.
 - Store picker and aisle order live in the store button next to search.
 - Undo toast for removals; update banner appears when a new version is cached.
+
+## Smarter nutrition
+Custom items can get nutrition from USDA FoodData Central and Open Food Facts (tap the closest match), or from the label. Results are cached locally. Add a personal USDA key under Lookup settings for higher limits. Fit scores on custom items are estimates (Fit ~N).
